@@ -1,0 +1,91 @@
+# Mercadín web
+
+Buscador que compara el precio de un producto en varios supermercados españoles a la vez. Es la versión web de la app Android Mercadín.
+
+**Web:** https://neburman.github.io/mercadin-web/
+
+> Los precios son orientativos: salen de la tienda online de cada comercio y pueden variar en la tienda física. Proyecto no afiliado a ningún comercio.
+
+## Qué hace
+
+- Busca un producto en 12 comercios a la vez: Aldi, Mercadona, Lidl, Dia, Carrefour, Consum, Alcampo, BM, Eroski, El Corte Inglés, Costco (vía Uber Eats) y Action.
+- Calcula el precio por kilo, litro o unidad para poder comparar envases distintos.
+- Ordena por relevancia, precio por kg/l, más barato, más caro, ofertas o A-Z.
+- Solo muestra productos cuyo nombre o marca contienen lo buscado, sin tener en cuenta tildes ni plurales.
+- Recuerda en el navegador el código postal, los comercios elegidos y la ordenación.
+- Pinta los resultados por bloques al hacer scroll, para gastar menos datos.
+
+## Cómo usarlo en local
+
+No hay que compilar ni instalar nada: basta con abrir `index.html` con doble clic.
+
+Si se prefiere servirlo como en GitHub Pages:
+
+```bash
+python3 -m http.server 8080 --bind 127.0.0.1
+```
+
+y abrir http://127.0.0.1:8080/.
+
+## Estructura
+
+```
+index.html          Única página: carga los CSS y los <script defer> en orden de dependencia
+css/
+  tokens.css        Variables: colores, espaciados, tipografía, tamaños
+  base.css          Reset, cabecera, controles y botones comunes
+  components/       Un CSS por componente
+js/
+  core/             Motor y componentes de la interfaz
+  stores/           Un adaptador por comercio
+img/                Logo y favicon
+```
+
+### `js/core`
+
+| Archivo | Responsabilidad |
+|---|---|
+| `app.js` | Punto de entrada: registra los comercios e inicia los componentes |
+| `engine.js` | Consulta en paralelo los comercios elegidos, descarta lo que no tiene relación con la búsqueda y normaliza los productos |
+| `product.js` | Modelo común de producto: validación y cálculo del precio por unidad |
+| `utils.js` | HTTP, proxy, almacenamiento, comparación de texto, formato, escape y eventos |
+| `algolia.js` / `aktios.js` | Lógica común de las plataformas que comparten varios comercios |
+| `search.js` | Formulario de búsqueda (solo busca al pulsar «Buscar») |
+| `results.js` | Estados, avisos por comercio y rejilla de productos con carga por scroll |
+| `sort.js` | Opciones de ordenación |
+| `store-filter.js` | Selección de comercios (desplegable en móvil y tablet, chips en PC) |
+| `postal-code.js` | Código postal |
+
+Cada componente es un objeto literal global con `constants`, `globals`, `elements`, `init()` y `listeners()`. No se usan módulos ES para que la página funcione abierta desde `file://`.
+
+## Proxy
+
+La mayoría de comercios no permiten peticiones desde otras webs (CORS). Esas peticiones pasan por un Cloudflare Worker (`utils.constants.PROXY_URL`). El Worker:
+
+- solo reenvía a los dominios de su lista `ALLOWED_HOSTS` y solo acepta los orígenes de `ALLOWED_ORIGINS` (GitHub Pages, `file://` y localhost);
+- no reenvía cookies ni cabeceras de origen, y no sigue redirecciones.
+
+Aldi, Mercadona y Lidl van directos, sin proxy.
+
+## Añadir un comercio
+
+1. Crear `js/stores/<comercio>.js` con el contrato de adaptador:
+   - `constants`: `ID`, `NAME`, `LOGO_URL`, `MODE`, endpoint y parámetros;
+   - `isAvailable(postalCode)`: si el comercio da servicio en ese código postal;
+   - `search(term, signal)`: lanza la petición y devuelve la respuesta cruda (con `utils.requestJson`, y `utils.getProxiedUrl` si hace falta proxy);
+   - `toProducts(raw)`: mapea la respuesta a los campos del modelo común (`id`, `name`, `brand`, `imageUrl`, `price`, `previousPrice`, `unitPrice`/`unitScale` o `packageText`, `available`, `categories`).
+2. Añadir su `<script defer>` en `index.html`, antes de los componentes de `js/core`.
+3. Añadirlo a `STORES` en `js/core/app.js`.
+4. Si va por proxy, añadir su dominio a `ALLOWED_HOSTS` del Worker.
+
+Si una escala de unidad no se reconoce, el producto se descarta y se avisa en consola; se añade la escala a `UNIT_SCALES` en `product.js`.
+
+## Puntos frágiles
+
+- **Action** usa una consulta GraphQL persistida: cuando Action publica una versión nueva, el hash caduca y hay que capturar el actual (instrucciones en `js/stores/action.js`).
+- **Eroski** no tiene API JSON: se lee el HTML de su listado, así que depende de sus clases CSS.
+- **Costco** muestra los precios de su tienda en Uber Eats, no los de la tienda física.
+
+## Licencia
+
+[MIT](LICENSE)

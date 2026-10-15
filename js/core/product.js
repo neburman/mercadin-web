@@ -6,14 +6,24 @@ const product = {
         UNIT_SCALES: {
             'ud': { unit: 'ud', factor: 1 },
             'unidad': { unit: 'ud', factor: 1 },
+            '1-u': { unit: 'ud', factor: 1 },
+            'each': { unit: 'ud', factor: 1 },
             'kg': { unit: 'kg', factor: 1 },
+            '1-kg': { unit: 'kg', factor: 1 },
             'kilo': { unit: 'kg', factor: 1 },
+            'kilos': { unit: 'kg', factor: 1 },
             '100-g': { unit: 'kg', factor: 10 },
             '100-gr': { unit: 'kg', factor: 10 },
             'g': { unit: 'kg', factor: 1000 },
+            'gr': { unit: 'kg', factor: 1000 },
+            'gramos': { unit: 'kg', factor: 1000 },
             'l': { unit: 'l', factor: 1 },
+            '1-l': { unit: 'l', factor: 1 },
             'litro': { unit: 'l', factor: 1 },
+            'litros': { unit: 'l', factor: 1 },
+            'litre': { unit: 'l', factor: 1 },
             '100-ml': { unit: 'l', factor: 10 },
+            '100ml': { unit: 'l', factor: 10 },
             'cl': { unit: 'l', factor: 100 },
             'ml': { unit: 'l', factor: 1000 },
             'm': { unit: 'm', factor: 1 },
@@ -21,13 +31,16 @@ const product = {
             'lavado': { unit: 'lavado', factor: 1 },
             'lv': { unit: 'lavado', factor: 1 },
             'bolsita': { unit: 'bolsita', factor: 1 },
+            'toallita': { unit: 'toallita', factor: 1 },
             'dc': { unit: 'docena', factor: 1 },
             'dz': { unit: 'docena', factor: 1 },
             'docena': { unit: 'docena', factor: 1 },
         },
         FALLBACK_SCALE: 'ud',
-        // Cantidad del envase: «900 g», «1 l unidad», «pack de 8 x 125 g». Las unidades deben existir en UNIT_SCALES.
-        PACKAGE_PATTERN: /(?:(\d+(?:[.,]\d+)?)\s*x\s*)?(\d+(?:[.,]\d+)?)\s*(kg|ml|cl|g|l)\b/,
+        // Cantidad del envase: «900 g», «1 l unidad», «pack de 8 x 125 g», «botella 1 litro». Las unidades deben existir en UNIT_SCALES.
+        PACKAGE_PATTERN: /(?:(\d+(?:[.,]\d+)?)\s*x\s*)?(\d+(?:[.,]\d+)?)\s*(kilos?|kg|litros?|ml|cl|gramos|gr|g|l)\b/,
+        // Precio por unidad ya formateado: «0,83 €/l», «1,49 €/ud.».
+        UNIT_PRICE_TEXT_PATTERN: /(\d+(?:[.,]\d+)?)\s*€\s*\/\s*([a-z\d\s-]+)/,
     },
     globals: {},
     elements: {},
@@ -71,6 +84,19 @@ const product = {
         const [, count, size, scale] = match;
 
         return { amount: (count ? self.parseNumber(count) : 1) * self.parseNumber(size), scale };
+    },
+
+    /**
+     * Lee un precio por unidad que el comercio solo da como texto.
+     *
+     * @param {string} text Por ejemplo, «0,83 €/l» o «1,49 €/ud.».
+     * @returns {{unitPrice: number|null, unitScale: string}} Escala vacía si el texto no encaja; entonces el modelo calcula con el envase.
+     */
+    parseUnitPriceText(text) {
+        const self = product;
+        const match = String(text ?? '').toLowerCase().match(self.constants.UNIT_PRICE_TEXT_PATTERN);
+
+        return match ? { unitPrice: self.parseNumber(match[1]), unitScale: match[2] } : { unitPrice: null, unitScale: '' };
     },
 
     /**

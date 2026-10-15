@@ -40,6 +40,7 @@ legend {
 
 .field {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--space-2);
 }
 
@@ -65,7 +66,16 @@ a {
 }
 
 .header__title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
     font-size: var(--font-size-xl);
+}
+
+.header__logo {
+    width: var(--header-logo-size);
+    height: var(--header-logo-size);
+    border-radius: var(--radius-sm);
 }
 
 .header__subtitle {

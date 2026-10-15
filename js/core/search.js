@@ -1,15 +1,12 @@
 /**
- * Formulario de búsqueda: lanza el motor al escribir (con debounce) o al enviar.
+ * Formulario de búsqueda: lanza el motor solo al enviar (botón «Buscar» o Intro).
  */
 const search = {
     constants: {
         workspace: '#search',
-        DEBOUNCE_MS: 400,
-        MIN_LENGTH: 3,
     },
     globals: {
         lastTerm: '',
-        debouncedSubmit: null,
     },
     elements: {
         form: '#search .search__form',
@@ -17,26 +14,19 @@ const search = {
     },
 
     /**
-     * Prepara el envío con debounce y registra los listeners.
+     * Registra los listeners.
      */
     init() {
-        const self = search;
-
-        self.globals.debouncedSubmit = utils.debounce(() => self.submit(false), self.constants.DEBOUNCE_MS);
-        self.listeners();
+        search.listeners();
     },
 
     listeners() {
         const self = search;
-        const { elements, globals, constants } = self;
+        const { elements, constants } = self;
 
         utils.addListener('submit', elements.form, (event) => {
             event.preventDefault();
-            self.submit(true);
-        }, constants.workspace);
-
-        utils.addListener('input', elements.input, () => {
-            globals.debouncedSubmit();
+            self.submit();
         }, constants.workspace);
     },
 
@@ -46,41 +36,42 @@ const search = {
         return document.querySelector(search.elements.input).value.trim();
     },
 
-    /**
-     * Indica si hay que buscar el término.
-     *
-     * @param {string} term
-     * @param {boolean} isExplicit true si se ha enviado el formulario; permite repetir y términos cortos.
-     * @returns {boolean}
-     */
-    shouldSearch(term, isExplicit) {
-        const { globals, constants } = search;
-
-        return isExplicit
-            ? term.length > 0
-            : term.length >= constants.MIN_LENGTH && term !== globals.lastTerm;
-    },
-
     // === ACTIONS ===
 
     /**
-     * Busca el término actual en los comercios elegidos y pinta el resultado; con el campo vacío vuelve al estado inicial.
-     *
-     * @param {boolean} isExplicit
+     * Busca el término escrito; con el campo vacío vuelve al estado inicial.
      */
-    async submit(isExplicit) {
+    submit() {
         const self = search;
         const term = self.getTerm();
-        const storeIds = storeFilter.getSelectedIds();
 
         if (!term) {
             self.reset();
             return;
         }
 
-        if (!self.shouldSearch(term, isExplicit)) {
-            return;
+        self.run(term);
+    },
+
+    /**
+     * Repite la última búsqueda enviada, para cuando cambian los comercios o el código postal.
+     */
+    refresh() {
+        const { lastTerm } = search.globals;
+
+        if (lastTerm) {
+            search.run(lastTerm);
         }
+    },
+
+    /**
+     * Busca el término en los comercios elegidos y pinta el resultado.
+     *
+     * @param {string} term
+     */
+    async run(term) {
+        const self = search;
+        const storeIds = storeFilter.getSelectedIds();
 
         self.globals.lastTerm = term;
 

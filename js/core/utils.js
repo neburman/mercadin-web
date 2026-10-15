@@ -1,10 +1,12 @@
 /**
- * Utilidades compartidas por todos los componentes: HTTP, formato, escape, tiempos y eventos.
+ * Utilidades compartidas por todos los componentes: HTTP, almacenamiento, formato, escape y eventos.
  */
 const utils = {
     constants: {
         CURRENCY: new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }),
         HTML_ENTITIES: { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' },
+        // Worker de Cloudflare para los comercios sin CORS; cada dominio debe estar en su lista ALLOWED_HOSTS.
+        PROXY_URL: 'https://mercadin-proxy.neburman.workers.dev/',
     },
     globals: {},
     elements: {},
@@ -28,6 +30,16 @@ const utils = {
         }
 
         return response.json();
+    },
+
+    /**
+     * Devuelve la URL que pasa por el proxy, para comercios que no permiten peticiones desde otras webs.
+     *
+     * @param {string} url
+     * @returns {string}
+     */
+    getProxiedUrl(url) {
+        return `${utils.constants.PROXY_URL}?url=${encodeURIComponent(url)}`;
     },
 
     // === STORAGE ===
@@ -94,24 +106,6 @@ const utils = {
      */
     formatUnitPrice(amount, unit) {
         return `${utils.formatPrice(amount)}/${unit}`;
-    },
-
-    // === TIMING ===
-
-    /**
-     * Devuelve una versión de la función que solo se ejecuta tras `wait` ms sin nuevas llamadas.
-     *
-     * @param {Function} callback
-     * @param {number} wait
-     * @returns {Function}
-     */
-    debounce(callback, wait) {
-        let timer = null;
-
-        return (...args) => {
-            clearTimeout(timer);
-            timer = setTimeout(() => callback(...args), wait);
-        };
     },
 
     // === EVENTS ===

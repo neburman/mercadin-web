@@ -35,7 +35,7 @@ const storeFilter = {
         utils.addListener('change', elements.checkbox, () => {
             self.setSelectedIds(self.getCheckedIds());
             self.saveSelection();
-            search.submit(true);
+            search.refresh();
         }, constants.workspace);
     },
 

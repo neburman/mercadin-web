@@ -114,7 +114,7 @@ const postalCodeForm = {
 
         self.setValue(value);
         utils.writeStorage(self.constants.STORAGE_KEY, value);
-        search.submit(true);
+        search.refresh();
     },
 
     /**

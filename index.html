@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Mercadín · Compara precios del súper</title>
     <meta name="description" content="Busca un producto y compara su precio en varios supermercados.">
+    <link rel="icon" type="image/jpeg" href="img/logo-192.jpg">
+    <link rel="apple-touch-icon" href="img/logo-192.jpg">
 
     <link rel="stylesheet" href="css/tokens.css">
     <link rel="stylesheet" href="css/base.css">
@@ -21,9 +23,19 @@
     <script defer src="js/core/product.js"></script>
     <script defer src="js/core/engine.js"></script>
     <script defer src="js/core/algolia.js"></script>
+    <script defer src="js/core/aktios.js"></script>
     <script defer src="js/stores/aldi.js"></script>
     <script defer src="js/stores/mercadona.js"></script>
+    <script defer src="js/stores/lidl.js"></script>
+    <script defer src="js/stores/dia.js"></script>
+    <script defer src="js/stores/carrefour.js"></script>
+    <script defer src="js/stores/consum.js"></script>
+    <script defer src="js/stores/alcampo.js"></script>
     <script defer src="js/stores/bm.js"></script>
+    <script defer src="js/stores/eroski.js"></script>
+    <script defer src="js/stores/elcorteingles.js"></script>
+    <script defer src="js/stores/costco.js"></script>
+    <script defer src="js/stores/action.js"></script>
     <script defer src="js/core/postal-code.js"></script>
     <script defer src="js/core/store-filter.js"></script>
     <script defer src="js/core/search.js"></script>
@@ -33,7 +45,10 @@
 </head>
 <body>
     <header class="header container">
-        <h1 class="header__title">Mercadín</h1>
+        <h1 class="header__title">
+            <img class="header__logo" src="img/logo-192.jpg" alt="" width="192" height="192">
+            Mercadín
+        </h1>
         <p class="header__subtitle">Compara precios de supermercados</p>
         <p class="fine-print header__disclaimer" role="note">Precios orientativos de la tienda online; pueden variar en la tienda física. Proyecto no afiliado a ningún comercio.</p>
     </header>

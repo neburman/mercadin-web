@@ -1,6 +1,6 @@
 /**
- * Adaptador de BM Supermercados: busca en el catálogo de su tienda online.
- * Su API no envía cabeceras CORS, así que desde el navegador fallará hasta tener proxy.
+ * Adaptador de BM Supermercados: busca en el catálogo de su tienda online (plataforma Aktios).
+ * Su API no envía cabeceras CORS, así que va por el proxy.
  */
 const storeBm = {
     constants: {
@@ -16,10 +16,6 @@ const storeBm = {
             orderById: 7,
             showRecommendations: false,
         },
-        PRICE_IDS: {
-            regular: 'PRICE',
-            offer: 'OFFER_PRICE',
-        },
     },
     globals: {},
     elements: {},
@@ -30,29 +26,6 @@ const storeBm = {
 
     getProductsData(raw) {
         return raw.products || [];
-    },
-
-    getProductData(item) {
-        return item.productData || {};
-    },
-
-    getPriceData(item) {
-        return item.priceData || {};
-    },
-
-    /**
-     * Devuelve un precio de la lista por su id (PRICE u OFFER_PRICE).
-     *
-     * @param {Object} item
-     * @param {string} priceId
-     * @returns {{centAmount?: number, centUnitAmount?: number}} Pese al nombre, los importes vienen en euros.
-     */
-    getPrice(item, priceId) {
-        return ((storeBm.getPriceData(item).prices || []).find((price) => price.id === priceId) || {}).value || {};
-    },
-
-    getCategories(item) {
-        return (item.categories || []).map((category) => category.name);
     },
 
     // === CONTRACT ===
@@ -77,7 +50,7 @@ const storeBm = {
         const { constants } = storeBm;
         const params = new URLSearchParams({ ...constants.QUERY_PARAMS, q: term });
 
-        return utils.requestJson(`${constants.ENDPOINT}?${params}`, { signal });
+        return utils.requestJson(utils.getProxiedUrl(`${constants.ENDPOINT}?${params}`), { signal });
     },
 
     /**
@@ -87,35 +60,6 @@ const storeBm = {
      * @returns {Array<Object>}
      */
     toProducts(raw) {
-        return storeBm.getProductsData(raw).map((item) => storeBm.mapItem(item));
-    },
-
-    /**
-     * Mapea un producto; con oferta, el precio vigente es OFFER_PRICE y PRICE pasa a ser el anterior.
-     *
-     * @param {Object} item
-     * @returns {Object}
-     */
-    mapItem(item) {
-        const self = storeBm;
-        const { PRICE_IDS } = self.constants;
-        const data = self.getProductData(item);
-        const regular = self.getPrice(item, PRICE_IDS.regular);
-        const offer = self.getPrice(item, PRICE_IDS.offer);
-        const current = offer.centAmount ? offer : regular;
-
-        return {
-            id: item.code,
-            name: data.name,
-            brand: (data.brand || {}).name,
-            imageUrl: data.imageURL,
-            price: current.centAmount,
-            previousPrice: offer.centAmount ? regular.centAmount : null,
-            unitPrice: current.centUnitAmount,
-            unitScale: self.getPriceData(item).unitPriceUnitType,
-            packageText: data.name,
-            available: data.availability === '1',
-            categories: self.getCategories(item),
-        };
+        return storeBm.getProductsData(raw).map((item) => aktios.mapItem(item));
     },
 };

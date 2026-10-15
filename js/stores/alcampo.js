@@ -66,9 +66,7 @@ const storeAlcampo = {
      */
     search(term, signal) {
         const { constants } = storeAlcampo;
-        const params = new URLSearchParams({ ...constants.QUERY_PARAMS, q: term });
-
-        return utils.requestJson(utils.getProxiedUrl(`${constants.ENDPOINT}?${params}`), { signal, headers: constants.HEADERS });
+        return utils.requestProxiedJson(constants.ENDPOINT, { ...constants.QUERY_PARAMS, q: term }, { signal, headers: constants.HEADERS });
     },
 
     /**

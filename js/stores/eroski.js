@@ -97,9 +97,7 @@ const storeEroski = {
      */
     search(term, signal) {
         const { constants } = storeEroski;
-        const url = `${constants.ENDPOINT}?${new URLSearchParams({ q: term })}`;
-
-        return utils.requestJson(utils.getProxiedUrl(url), { method: 'POST', headers: constants.HEADERS, body: new URLSearchParams(constants.FORM_FIELDS), signal });
+        return utils.requestProxiedJson(constants.ENDPOINT, { q: term }, { method: 'POST', headers: constants.HEADERS, body: new URLSearchParams(constants.FORM_FIELDS), signal });
     },
 
     /**

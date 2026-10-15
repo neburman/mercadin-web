@@ -1,5 +1,5 @@
 /**
- * Ordenación de los resultados; recuerda la elección entre visitas.
+ * Ordenación de los resultados; recuerda la última elegida y, si no hay ninguna, empieza por precio por kg/l.
  */
 const sort = {
     constants: {
@@ -16,7 +16,7 @@ const sort = {
             name: { label: 'A-Z', field: 'name', direction: 1, groupByUnit: false },
         },
         OPTION_ORDER: ['relevance', 'unitPrice', 'priceAsc', 'priceDesc', 'discount', 'name'],
-        DEFAULT_KEY: 'relevance',
+        DEFAULT_KEY: 'unitPrice',
     },
     globals: {
         sortKey: '',
@@ -29,7 +29,7 @@ const sort = {
     },
 
     /**
-     * Recupera la ordenación guardada, pinta las opciones y el resumen del desplegable, y registra los listeners.
+     * Recupera la última ordenación guardada, pinta las opciones y el resumen del desplegable, y registra los listeners.
      */
     init() {
         const self = sort;
@@ -91,7 +91,7 @@ const sort = {
     // === SETTERS ===
 
     /**
-     * Guarda la ordenación elegida; una clave desconocida vuelve a la de por defecto.
+     * Guarda la ordenación elegida; una clave desconocida (por ejemplo, guardada por una versión anterior) vuelve a la de por defecto.
      *
      * @param {string} sortKey
      */

@@ -60,10 +60,6 @@
         background: var(--color-selected-bg);
         color: var(--color-text);
     }
-
-    .dropdown__content--list .chip::after {
-        content: none;
-    }
 }
 
 /* En PC se ven las opciones sin desplegable; dropdown.js lo mantiene abierto cuando el resumen está oculto. */

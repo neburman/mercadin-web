@@ -67,9 +67,7 @@ const storeLidl = {
      */
     search(term, signal) {
         const { constants } = storeLidl;
-        const params = new URLSearchParams({ ...constants.QUERY_PARAMS, q: term });
-
-        return utils.requestJson(utils.getProxiedUrl(`${constants.ENDPOINT}?${params}`), { signal });
+        return utils.requestProxiedJson(constants.ENDPOINT, { ...constants.QUERY_PARAMS, q: term }, { signal });
     },
 
     /**

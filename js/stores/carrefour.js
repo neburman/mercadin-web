@@ -58,9 +58,7 @@ const storeCarrefour = {
      */
     search(term, signal) {
         const { constants } = storeCarrefour;
-        const params = new URLSearchParams({ ...constants.QUERY_PARAMS, query: term });
-
-        return utils.requestJson(utils.getProxiedUrl(`${constants.ENDPOINT}?${params}`), { signal });
+        return utils.requestProxiedJson(constants.ENDPOINT, { ...constants.QUERY_PARAMS, query: term }, { signal });
     },
 
     /**

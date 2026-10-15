@@ -10,9 +10,9 @@ Buscador que compara el precio de un producto en varios supermercados españoles
 
 - Busca un producto en 12 comercios a la vez: Aldi, Mercadona, Lidl, Dia, Carrefour, Consum, Alcampo, BM, Eroski, El Corte Inglés, Costco (vía Uber Eats) y Action.
 - Calcula el precio por kilo, litro o unidad para poder comparar envases distintos.
-- Ordena por relevancia, precio por kg/l, más barato, más caro, ofertas o A-Z.
+- Ordena por precio por kg/l (el orden inicial), relevancia, más barato, más caro, ofertas o A-Z.
 - Solo muestra productos cuyo nombre o marca contienen lo buscado, sin tener en cuenta tildes ni plurales.
-- Recuerda en el navegador el código postal, los comercios elegidos y la ordenación.
+- Recuerda en el navegador el código postal, los comercios elegidos y la última ordenación.
 - Muestra los resultados según responde cada comercio, sin esperar al más lento; un comercio que tarda más de 10 s se da por caído.
 - Pinta los resultados por bloques al hacer scroll, para gastar menos datos.
 - Guarda cada búsqueda 10 minutos: repetirla o cambiar los comercios marcados no vuelve a pedir lo ya recibido.
@@ -53,9 +53,10 @@ img/                Logo y favicon
 | `utils.js` | HTTP, proxy, almacenamiento, comparación de texto, formato, escape y eventos |
 | `algolia.js` / `aktios.js` | Lógica común de las plataformas que comparten varios comercios |
 | `search.js` | Formulario de búsqueda (solo busca al pulsar «Buscar») |
-| `results.js` | Estados, avisos por comercio y rejilla de productos con carga por scroll |
+| `results.js` | Estados, comercios que aún cargan o no responden y rejilla de productos con carga por scroll |
 | `sort.js` | Opciones de ordenación |
-| `store-filter.js` | Selección de comercios (desplegable en móvil y tablet, chips en PC) |
+| `store-filter.js` | Selección de comercios |
+| `dropdown.js` | Desplegables de comercios y ordenación: lista cerrada en móvil y tablet, chips abiertos en PC |
 | `postal-code.js` | Código postal |
 
 Cada componente es un objeto literal global con `constants`, `globals`, `elements`, `init()` y `listeners()`. No se usan módulos ES para que la página funcione abierta desde `file://`.
@@ -75,7 +76,7 @@ Aldi y Mercadona van directos, sin proxy: su buscador ya permite peticiones desd
 1. Crear `js/stores/<comercio>.js` con el contrato de adaptador:
    - `constants`: `ID`, `NAME`, `LOGO_URL`, `MODE`, endpoint y parámetros;
    - `isAvailable(postalCode)`: si el comercio da servicio en ese código postal;
-   - `search(term, signal)`: lanza la petición y devuelve la respuesta cruda (con `utils.requestJson`, y `utils.getProxiedUrl` si hace falta proxy);
+   - `search(term, signal)`: lanza la petición y devuelve la respuesta cruda (con `utils.requestJson` si va directo, o `utils.requestProxiedJson` si va por el proxy);
    - `toProducts(raw)`: mapea la respuesta a los campos del modelo común (`id`, `name`, `brand`, `imageUrl`, `price`, `previousPrice`, `unitPrice`/`unitScale` o `packageText`, `available`, `categories`).
 2. Añadir su `<script defer>` en `index.html`, antes de los componentes de `js/core`.
 3. Añadirlo a `STORES` en `js/core/app.js`.

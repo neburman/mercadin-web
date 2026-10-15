@@ -79,9 +79,7 @@ const storeElCorteIngles = {
      */
     search(term, signal) {
         const { constants } = storeElCorteIngles;
-        const params = new URLSearchParams({ ...constants.QUERY_PARAMS, question: term });
-
-        return utils.requestJson(utils.getProxiedUrl(`${constants.ENDPOINT}?${params}`), { signal, headers: constants.HEADERS });
+        return utils.requestProxiedJson(constants.ENDPOINT, { ...constants.QUERY_PARAMS, question: term }, { signal, headers: constants.HEADERS });
     },
 
     /**

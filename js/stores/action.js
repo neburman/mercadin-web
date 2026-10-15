@@ -80,7 +80,7 @@ const storeAction = {
         const self = storeAction;
         const { constants } = self;
 
-        return utils.requestJson(utils.getProxiedUrl(constants.ENDPOINT), { method: 'POST', headers: constants.HEADERS, body: self.getBody(term), signal });
+        return utils.requestProxiedJson(constants.ENDPOINT, {}, { method: 'POST', headers: constants.HEADERS, body: self.getBody(term), signal });
     },
 
     /**

@@ -53,6 +53,20 @@ const utils = {
         return `${utils.constants.PROXY_URL}?url=${encodeURIComponent(url)}`;
     },
 
+    /**
+     * Hace la petición a un comercio a través del proxy y devuelve el JSON.
+     *
+     * @param {string} endpoint
+     * @param {Object} params Parámetros de la URL; vacío si no lleva.
+     * @param {RequestInit} options
+     * @returns {Promise<Object>}
+     */
+    requestProxiedJson(endpoint, params = {}, options = {}) {
+        const query = new URLSearchParams(params).toString();
+
+        return utils.requestJson(utils.getProxiedUrl(query ? `${endpoint}?${query}` : endpoint), options);
+    },
+
     // === STORAGE ===
 
     /**

@@ -2,17 +2,6 @@
     padding-left: var(--space-2);
 }
 
-.store-filter__option::after {
-    content: "✓" / "";
-    width: 1ch;
-    color: var(--color-primary);
-    visibility: hidden;
-}
-
-.store-filter__option:has(:checked)::after {
-    visibility: visible;
-}
-
 .store-filter__logo {
     width: var(--logo-size);
     height: var(--logo-size);

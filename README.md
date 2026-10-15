@@ -82,7 +82,7 @@ Si una escala de unidad no se reconoce, el producto se descarta y se avisa en co
 
 ## Puntos frágiles
 
-- **Action** usa una consulta GraphQL persistida: cuando Action publica una versión nueva, el hash caduca y hay que capturar el actual (instrucciones en `js/stores/action.js`).
+- **Action** recibe una consulta GraphQL propia escrita en `js/stores/action.js`: si Action cambia los nombres de sus campos, hay que ajustarla.
 - **Eroski** no tiene API JSON: se lee el HTML de su listado, así que depende de sus clases CSS.
 - **Costco** muestra los precios de su tienda en Uber Eats, no los de la tienda física.
 

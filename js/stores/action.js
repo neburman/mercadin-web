@@ -1,5 +1,5 @@
 /**
- * Adaptador de Action: lanza la consulta GraphQL de búsqueda de su web.
+ * Adaptador de Action: lanza una consulta GraphQL propia contra la API de búsqueda de su web.
  * Su API no envía cabeceras CORS, así que va por el proxy.
  */
 const storeAction = {
@@ -9,14 +9,26 @@ const storeAction = {
         LOGO_URL: 'https://www.action.com/favicon.ico',
         MODE: 'busqueda',
         ENDPOINT: 'https://www.action.com/api/graphql',
-        OPERATION: 'SearchProductsWithSuggestions',
-        // Huella de la consulta guardada en su servidor: cambia cuando Action publica una versión nueva de su web
-        // y entonces responde PersistedQueryNotFound. Se saca de la petición a /api/graphql al buscar en action.com.
-        QUERY_HASH: '3acbb3bfc26cd52387028f110b0b59b7f658d11cb790ce12eb766f6b53e94348',
-        LANGUAGE: 'es-ES',
-        // Sin apollo-require-preflight su servidor rechaza la petición como posible CSRF.
+        OPERATION: 'MercadinSearch',
+        // Consulta propia enviada entera, en lugar del hash de la que usa su web, que caduca con cada versión nueva.
+        // Es la búsqueda completa de su página de resultados (no la de sugerencias, que da 5) y pide solo los campos que se mapean.
+        QUERY: `query MercadinSearch($input: SearchProductsInput!) {
+            searchProducts(input: $input) {
+                productResults {
+                    searchProducts {
+                        product {
+                            id title description image brand isAvailable
+                            price { current { amount } original { amount } unitInfo { formatted } }
+                        }
+                    }
+                }
+            }
+        }`,
+        // Las páginas empiezan en 0; con un límite alto llega todo en una sola petición y en el mismo orden que su web.
+        // El tope solo actúa en búsquedas muy genéricas, que el filtro de relevancia del motor recorta igualmente.
+        PAGINATION: { page: 0, limitPerPage: 500 },
         HEADERS: {
-            'apollo-require-preflight': 'true',
+            'Content-Type': 'application/json',
             'Accept-Language': 'es-ES',
         },
     },
@@ -28,7 +40,7 @@ const storeAction = {
     // === GETTERS ===
 
     getItems(raw) {
-        return ((((raw.data || {}).searchWithSuggestions || {}).productResults || {}).searchProducts || [])
+        return ((((raw.data || {}).searchProducts || {}).productResults || {}).searchProducts || [])
             .map((result) => result.product || {});
     },
 
@@ -36,15 +48,14 @@ const storeAction = {
         return item.price || {};
     },
 
-    getUrl(term) {
+    getBody(term) {
         const { constants } = storeAction;
-        const params = new URLSearchParams({
-            operationName: constants.OPERATION,
-            variables: JSON.stringify({ input: { searchTerm: term } }),
-            extensions: JSON.stringify({ persistedQuery: { sha256Hash: constants.QUERY_HASH, version: 1 }, headers: { 'Accept-Language': constants.LANGUAGE } }),
-        });
 
-        return `${constants.ENDPOINT}?${params}`;
+        return JSON.stringify({
+            query: constants.QUERY,
+            operationName: constants.OPERATION,
+            variables: { input: { searchTerm: term, pagination: constants.PAGINATION } },
+        });
     },
 
     // === CONTRACT ===
@@ -66,7 +77,10 @@ const storeAction = {
      * @returns {Promise<Object>} Respuesta cruda.
      */
     search(term, signal) {
-        return utils.requestJson(utils.getProxiedUrl(storeAction.getUrl(term)), { signal, headers: storeAction.constants.HEADERS });
+        const self = storeAction;
+        const { constants } = self;
+
+        return utils.requestJson(utils.getProxiedUrl(constants.ENDPOINT), { method: 'POST', headers: constants.HEADERS, body: self.getBody(term), signal });
     },
 
     /**

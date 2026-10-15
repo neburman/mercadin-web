@@ -10,9 +10,10 @@
 
     <link rel="stylesheet" href="css/tokens.css">
     <link rel="stylesheet" href="css/base.css">
-    <link rel="stylesheet" href="css/components/notice.css">
+    <link rel="stylesheet" href="css/components/store-status.css">
     <link rel="stylesheet" href="css/components/postal-code.css">
     <link rel="stylesheet" href="css/components/chip.css">
+    <link rel="stylesheet" href="css/components/dropdown.css">
     <link rel="stylesheet" href="css/components/store-filter.css">
     <link rel="stylesheet" href="css/components/search.css">
     <link rel="stylesheet" href="css/components/sort.css">
@@ -36,6 +37,7 @@
     <script defer src="js/stores/elcorteingles.js"></script>
     <script defer src="js/stores/costco.js"></script>
     <script defer src="js/stores/action.js"></script>
+    <script defer src="js/core/dropdown.js"></script>
     <script defer src="js/core/postal-code.js"></script>
     <script defer src="js/core/store-filter.js"></script>
     <script defer src="js/core/search.js"></script>
@@ -67,9 +69,9 @@
 
         <fieldset id="store-filter" class="store-filter">
             <legend class="field-label">¿Dónde quieres buscar?</legend>
-            <details class="store-filter__dropdown">
-                <summary class="control store-filter__summary"></summary>
-                <div class="chip-group store-filter__options"></div>
+            <details class="dropdown store-filter__dropdown">
+                <summary class="control dropdown__summary store-filter__summary"></summary>
+                <div class="chip-group dropdown__content dropdown__content--list store-filter__options"></div>
             </details>
         </fieldset>
 
@@ -85,7 +87,10 @@
 
         <fieldset id="sort" class="sort" hidden>
             <legend class="sort__label">Ordenar por</legend>
-            <div class="chip-group sort__options"></div>
+            <details class="dropdown sort__dropdown">
+                <summary class="control dropdown__summary sort__summary"></summary>
+                <div class="chip-group dropdown__content dropdown__content--list sort__options"></div>
+            </details>
         </fieldset>
 
         <section id="results" class="results" aria-live="polite" aria-busy="false"></section>

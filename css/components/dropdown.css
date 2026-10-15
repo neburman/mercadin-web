@@ -1,0 +1,78 @@
+.dropdown__summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    font-weight: var(--font-weight-bold);
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+}
+
+.dropdown__summary::-webkit-details-marker {
+    display: none;
+}
+
+.dropdown__summary::after {
+    content: "▾" / "";
+    color: var(--color-text-muted);
+    transition: transform var(--transition);
+}
+
+.dropdown[open] .dropdown__summary::after {
+    transform: rotate(180deg);
+}
+
+.dropdown__summary:hover {
+    border-color: var(--color-primary);
+}
+
+.dropdown__summary:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-offset);
+}
+
+.dropdown__content {
+    margin-top: var(--space-3);
+}
+
+/* En móvil y tablet las opciones se ven como un selector: una lista de una sola columna, con la elegida en verde. */
+@media (max-width: 1024px) {
+    .dropdown__content--list {
+        flex-direction: column;
+        gap: 0;
+        border: var(--border-width) solid var(--color-border);
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+    }
+
+    .dropdown__content--list .chip {
+        border: 0;
+        border-bottom: var(--border-width) solid var(--color-border);
+        border-radius: 0;
+    }
+
+    .dropdown__content--list .chip:last-child {
+        border-bottom: 0;
+    }
+
+    .dropdown__content--list .chip:has(:checked) {
+        background: var(--color-selected-bg);
+        color: var(--color-text);
+    }
+
+    .dropdown__content--list .chip::after {
+        content: none;
+    }
+}
+
+/* En PC se ven las opciones sin desplegable; dropdown.js lo mantiene abierto cuando el resumen está oculto. */
+@media (min-width: 1025px) {
+    .dropdown__summary {
+        display: none;
+    }
+
+    .dropdown__content {
+        margin-top: 0;
+    }
+}

@@ -15,21 +15,18 @@ const storeFilter = {
             none: 'Ningún comercio',
             count: (total) => `${total} comercios`,
         },
-        NAME_LIST: new Intl.ListFormat('es', { type: 'conjunction' }),
     },
     globals: {
         selectedIds: [],
-        isDesktop: null,
     },
     elements: {
-        dropdown: '#store-filter .store-filter__dropdown',
         summary: '#store-filter .store-filter__summary',
         options: '#store-filter .store-filter__options',
         checkbox: '#store-filter .store-filter__checkbox',
     },
 
     /**
-     * Recupera la selección guardada, pinta las opciones y el resumen, y registra los listeners.
+     * Recupera la selección guardada, pinta las opciones y el resumen del desplegable, y registra los listeners.
      */
     init() {
         const self = storeFilter;
@@ -37,15 +34,12 @@ const storeFilter = {
         self.setSelectedIds(self.getStoredSelection());
         self.renderOptions();
         self.renderSummary();
-        self.syncDropdown();
         self.listeners();
     },
 
     listeners() {
         const self = storeFilter;
         const { elements, constants } = self;
-
-        window.addEventListener('resize', () => self.syncDropdown());
 
         utils.addListener('change', elements.checkbox, () => {
             self.setSelectedIds(self.getCheckedIds());
@@ -83,7 +77,7 @@ const storeFilter = {
      */
     getSummaryText() {
         const self = storeFilter;
-        const { SUMMARY_TEXTS, MAX_SUMMARY_NAMES, NAME_LIST } = self.constants;
+        const { SUMMARY_TEXTS, MAX_SUMMARY_NAMES } = self.constants;
         const selectedIds = self.getSelectedIds();
 
         if (!selectedIds.length) {
@@ -98,7 +92,7 @@ const storeFilter = {
             return SUMMARY_TEXTS.count(selectedIds.length);
         }
 
-        return NAME_LIST.format(engine.getStoresByIds(selectedIds).map((store) => engine.getOrigin(store).storeName));
+        return utils.formatList(engine.getStoresByIds(selectedIds).map((store) => engine.getOrigin(store).storeName));
     },
 
     getCheckedIds() {
@@ -133,23 +127,6 @@ const storeFilter = {
         document.querySelector(self.elements.options).innerHTML = engine.getStores()
             .map((store) => self.getOptionHTML(store))
             .join('');
-    },
-
-    /**
-     * Abre el desplegable en PC y lo cierra en móvil y tablet, solo al cambiar de uno a otro para no deshacer lo que haga la persona.
-     * El punto de corte vive solo en el CSS: en PC el resumen está oculto.
-     */
-    syncDropdown() {
-        const self = storeFilter;
-        const { elements, globals } = self;
-        const isDesktop = getComputedStyle(document.querySelector(elements.summary)).display === 'none';
-
-        if (isDesktop === globals.isDesktop) {
-            return;
-        }
-
-        globals.isDesktop = isDesktop;
-        document.querySelector(elements.dropdown).open = isDesktop;
     },
 
     /**

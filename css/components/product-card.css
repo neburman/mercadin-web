@@ -75,3 +75,21 @@
     background: var(--color-muted-bg);
     font-size: var(--font-size-sm);
 }
+
+/* En móvil, imagen pequeña a la izquierda para que quepan varios productos por pantalla. */
+@media (max-width: 599px) {
+    .product-card {
+        flex-direction: row;
+        align-items: flex-start;
+        padding: var(--space-3);
+    }
+
+    .product-card__media {
+        flex: 0 0 var(--image-size-compact);
+        height: var(--image-size-compact);
+    }
+
+    .product-card__body {
+        min-width: 0;
+    }
+}

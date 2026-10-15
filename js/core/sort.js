@@ -22,18 +22,21 @@ const sort = {
         sortKey: '',
     },
     elements: {
+        dropdown: '#sort .sort__dropdown',
+        summary: '#sort .sort__summary',
         options: '#sort .sort__options',
         radio: '#sort .sort__radio',
     },
 
     /**
-     * Recupera la ordenación guardada, pinta las opciones y registra los listeners.
+     * Recupera la ordenación guardada, pinta las opciones y el resumen del desplegable, y registra los listeners.
      */
     init() {
         const self = sort;
 
         self.setSortKey(utils.readStorage(self.constants.STORAGE_KEY, self.constants.DEFAULT_KEY));
         self.renderOptions();
+        self.renderSummary();
         self.listeners();
     },
 
@@ -44,6 +47,8 @@ const sort = {
         utils.addListener('change', elements.radio, function () {
             self.setSortKey(this.value);
             utils.writeStorage(constants.STORAGE_KEY, self.globals.sortKey);
+            self.renderSummary();
+            dropdown.closeOnMobile(elements.dropdown);
             results.repaint();
         }, constants.workspace);
     },
@@ -122,6 +127,13 @@ const sort = {
      */
     toggle(isVisible) {
         document.querySelector(sort.constants.workspace).hidden = !isVisible;
+    },
+
+    /**
+     * Pinta la ordenación elegida en el desplegable cerrado.
+     */
+    renderSummary() {
+        document.querySelector(sort.elements.summary).textContent = sort.getCurrentOption().label;
     },
 
     /**

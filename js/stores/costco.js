@@ -43,13 +43,13 @@ const storeCostco = {
     },
 
     /**
-     * Pasa un importe de céntimos a euros.
+     * Pasa un importe de céntimos a euros; Uber Eats a veces manda fracciones de céntimo en las ofertas.
      *
      * @param {number|undefined} cents
      * @returns {number|null}
      */
     toEuros(cents) {
-        return Number.isFinite(cents) ? cents / storeCostco.constants.CENTS : null;
+        return Number.isFinite(cents) ? Math.round(cents) / storeCostco.constants.CENTS : null;
     },
 
     // === CONTRACT ===

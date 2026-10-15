@@ -13,7 +13,9 @@ Buscador que compara el precio de un producto en varios supermercados españoles
 - Ordena por relevancia, precio por kg/l, más barato, más caro, ofertas o A-Z.
 - Solo muestra productos cuyo nombre o marca contienen lo buscado, sin tener en cuenta tildes ni plurales.
 - Recuerda en el navegador el código postal, los comercios elegidos y la ordenación.
+- Muestra los resultados según responde cada comercio, sin esperar al más lento; un comercio que tarda más de 10 s se da por caído.
 - Pinta los resultados por bloques al hacer scroll, para gastar menos datos.
+- Guarda cada búsqueda 10 minutos: repetirla o cambiar los comercios marcados no vuelve a pedir lo ya recibido.
 
 ## Cómo usarlo en local
 
@@ -60,12 +62,13 @@ Cada componente es un objeto literal global con `constants`, `globals`, `element
 
 ## Proxy
 
-La mayoría de comercios no permiten peticiones desde otras webs (CORS). Esas peticiones pasan por un Cloudflare Worker (`utils.constants.PROXY_URL`). El Worker:
+La mayoría de comercios no permiten peticiones desde otras webs (CORS). Esas peticiones pasan por un Cloudflare Worker (`utils.constants.PROXY_URL`), cuyo código está en [`proxy/worker.js`](proxy/worker.js) con los pasos para desplegarlo en otra cuenta. El Worker:
 
 - solo reenvía a los dominios de su lista `ALLOWED_HOSTS` y solo acepta los orígenes de `ALLOWED_ORIGINS` (GitHub Pages, `file://` y localhost);
-- no reenvía cookies ni cabeceras de origen, y no sigue redirecciones.
+- no reenvía cookies ni cabeceras de origen, y no sigue redirecciones;
+- devuelve las respuestas comprimidas.
 
-Aldi, Mercadona y Lidl van directos, sin proxy.
+Aldi y Mercadona van directos, sin proxy: su buscador ya permite peticiones desde otras webs y responde comprimido. Lidl también las permite, pero va por el proxy porque responde sin comprimir.
 
 ## Añadir un comercio
 

@@ -65,13 +65,14 @@ const search = {
     },
 
     /**
-     * Busca el término en los comercios elegidos y pinta el resultado.
+     * Busca el término en los comercios elegidos y pinta los resultados según responde cada comercio.
      *
      * @param {string} term
      */
     async run(term) {
         const self = search;
         const storeIds = storeFilter.getSelectedIds();
+        let isFirstUpdate = true;
 
         self.globals.lastTerm = term;
 
@@ -83,11 +84,10 @@ const search = {
 
         results.renderState('loading');
 
-        const storeResults = await engine.search(term, storeIds, postalCodeForm.getValue());
-
-        if (storeResults) {
-            results.render(storeResults);
-        }
+        await engine.search(term, storeIds, postalCodeForm.getValue(), (storeResults, pendingIds) => {
+            results.render(storeResults, pendingIds, !isFirstUpdate);
+            isFirstUpdate = false;
+        });
     },
 
     /**

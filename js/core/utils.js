@@ -4,6 +4,7 @@
 const utils = {
     constants: {
         CURRENCY: new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }),
+        LIST_FORMAT: new Intl.ListFormat('es', { type: 'conjunction' }),
         HTML_ENTITIES: { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' },
         // Worker de Cloudflare para los comercios sin CORS; cada dominio debe estar en su lista ALLOWED_HOSTS.
         PROXY_URL: 'https://mercadin-proxy.neburman.workers.dev/',
@@ -11,8 +12,12 @@ const utils = {
         WORD_SEPARATOR_PATTERN: /[^a-z0-9ñ]+/,
         // Palabras más cortas («de», «la») no sirven para decidir si un producto encaja con la búsqueda.
         MIN_TERM_WORD_LENGTH: 3,
-        // Se quita el plural para que «pistachos» encuentre «Pistacho» y al revés.
-        PLURAL_SUFFIX_PATTERN: /(es|s)$/,
+        // Reducen singular y plural a la misma raíz: leche/leches → lech, yogur/yogures → yogur, nuez/nueces → nuec.
+        STEM_RULES: [
+            [/s$/, ''],
+            [/([^aeiou])e$/, '$1'],
+            [/z$/, 'c'],
+        ],
     },
     globals: {},
     elements: {},
@@ -94,31 +99,62 @@ const utils = {
     },
 
     /**
-     * Devuelve las raíces de las palabras significativas de una búsqueda.
+     * Reduce una palabra ya normalizada a su raíz, para que singular y plural coincidan.
      *
-     * @param {string} term
-     * @returns {Array<string>} Por ejemplo, «Aceites de oliva» → ['aceit', 'oliva'].
+     * @param {string} word
+     * @returns {string}
      */
-    getTermStems(term) {
-        const { WORD_SEPARATOR_PATTERN, MIN_TERM_WORD_LENGTH, PLURAL_SUFFIX_PATTERN } = utils.constants;
-
-        return utils.normalizeText(term)
-            .split(WORD_SEPARATOR_PATTERN)
-            .filter((word) => word.length >= MIN_TERM_WORD_LENGTH)
-            .map((word) => word.replace(PLURAL_SUFFIX_PATTERN, ''));
+    getWordStem(word) {
+        return utils.constants.STEM_RULES.reduce((stem, [pattern, replacement]) => stem.replace(pattern, replacement), word);
     },
 
     /**
-     * Indica si el texto contiene todas las palabras de la búsqueda, sin tener en cuenta tildes ni plurales.
+     * Devuelve las palabras de un texto, normalizadas.
+     *
+     * @param {string} text
+     * @returns {Array<string>} Por ejemplo, «Aceites de Oliva» → ['aceites', 'de', 'oliva'].
+     */
+    getTextWords(text) {
+        return utils.normalizeText(text).split(utils.constants.WORD_SEPARATOR_PATTERN).filter(Boolean);
+    },
+
+    /**
+     * Devuelve las raíces de las palabras de un texto.
+     *
+     * @param {string} text
+     * @returns {Array<string>} Por ejemplo, «Aceites de oliva» → ['aceit', 'de', 'oliva'].
+     */
+    getTextStems(text) {
+        return utils.getTextWords(text).map((word) => utils.getWordStem(word));
+    },
+
+    /**
+     * Devuelve las raíces de las palabras de una búsqueda que sirven para filtrar; si todas son cortas («té»), se usan todas.
+     *
+     * @param {string} term
+     * @returns {Array<string>} Vacío si la búsqueda no tiene ninguna palabra.
+     */
+    getTermStems(term) {
+        const self = utils;
+        const words = self.getTextWords(term);
+        const longWords = words.filter((word) => word.length >= self.constants.MIN_TERM_WORD_LENGTH);
+
+        return (longWords.length ? longWords : words).map((word) => self.getWordStem(word));
+    },
+
+    /**
+     * Indica si el texto contiene todas las palabras significativas de la búsqueda como palabras enteras, sin tener en cuenta tildes ni plurales.
+     * «café» encuentra «Cafés» pero no «Cafetera»; una búsqueda sin palabras no encuentra nada.
      *
      * @param {string} text
      * @param {string} term
      * @returns {boolean}
      */
     matchesTerm(text, term) {
-        const normalizedText = utils.normalizeText(text);
+        const termStems = utils.getTermStems(term);
+        const textStems = new Set(utils.getTextStems(text));
 
-        return utils.getTermStems(term).every((stem) => normalizedText.includes(stem));
+        return termStems.length > 0 && termStems.every((stem) => textStems.has(stem));
     },
 
     // === FORMAT ===
@@ -152,6 +188,16 @@ const utils = {
      */
     formatUnitPrice(amount, unit) {
         return `${utils.formatPrice(amount)}/${unit}`;
+    },
+
+    /**
+     * Une una lista de textos como en una frase.
+     *
+     * @param {Array<string>} items
+     * @returns {string} Por ejemplo, «Aldi, Dia y Eroski».
+     */
+    formatList(items) {
+        return utils.constants.LIST_FORMAT.format(items);
     },
 
     // === EVENTS ===

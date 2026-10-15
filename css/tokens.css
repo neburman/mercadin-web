@@ -50,6 +50,7 @@
     --postal-code-width: 8rem;
     --letter-spacing-wide: 0.1em;
     --image-size: 9rem;
+    --image-size-compact: 5.5rem;
 }
 
 @media (prefers-color-scheme: dark) {

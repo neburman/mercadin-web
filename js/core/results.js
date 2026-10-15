@@ -1,5 +1,5 @@
 /**
- * Pinta los resultados de búsqueda: estados, avisos por comercio y rejilla de productos.
+ * Pinta los resultados de búsqueda: estados, estado de cada comercio y rejilla de productos.
  */
 const results = {
     constants: {
@@ -10,17 +10,21 @@ const results = {
             noStores: { title: 'Ningún comercio elegido', text: 'Marca al menos un comercio para buscar.' },
         },
         STATE_DEFAULT: { title: '', text: '' },
-        STORE_STATUSES: {
-            error: { text: 'Este comercio no responde ahora mismo.', modifier: 'error' },
-            unavailable: { text: 'No disponible en tu zona.', modifier: 'unavailable' },
+        // Solo se etiquetan los comercios que faltan o fallan; las claves coinciden con engine.constants.STATUS, más `pending`.
+        STORE_STATES: {
+            pending: { modifier: 'pending', detail: 'cargando…' },
+            error: { modifier: 'error', detail: 'no responde' },
+            unavailable: { modifier: 'unavailable', detail: 'fuera de zona' },
         },
-        STORE_STATUS_DEFAULT: { text: '', modifier: '' },
+        STORE_STATE_DEFAULT: { modifier: '', detail: '' },
+        PENDING_STATE: 'pending',
         COUNT_LABELS: { one: 'producto', other: 'productos' },
         PLURAL_RULES: new Intl.PluralRules('es'),
         // Tamaño intrínseco de las miniaturas (cuadradas); reserva el hueco antes de que carguen.
         IMAGE_SIZE: 300,
         TEXTS: {
             outOfStock: 'Sin stock online',
+            storeStatusLabel: 'Comercios cargando o sin respuesta',
         },
         // Tarjetas que se añaden cada vez que el final de la rejilla se acerca a la pantalla.
         PAGE_SIZE: 24,
@@ -29,6 +33,7 @@ const results = {
     },
     globals: {
         storeResults: [],
+        pendingIds: [],
         products: [],
         shownCount: 0,
         observer: null,
@@ -61,8 +66,12 @@ const results = {
         return results.constants.STATES[stateKey] || results.constants.STATE_DEFAULT;
     },
 
-    getStoreStatus(status) {
-        return results.constants.STORE_STATUSES[status] || results.constants.STORE_STATUS_DEFAULT;
+    getStoreState(stateKey) {
+        return results.constants.STORE_STATES[stateKey] || results.constants.STORE_STATE_DEFAULT;
+    },
+
+    getStoreResult(storeResults, storeId) {
+        return storeResults.find((storeResult) => storeResult.storeId === storeId) || null;
     },
 
     getCountLabel(count) {
@@ -74,13 +83,35 @@ const results = {
     },
 
     getFailedStores(storeResults) {
-        return storeResults.filter((storeResult) => results.getStoreStatus(storeResult.status).text);
+        return storeResults.filter((storeResult) => storeResult.status !== engine.constants.STATUS.ok);
+    },
+
+    /**
+     * Devuelve los comercios de la búsqueda en el orden de registro, para que sus etiquetas no cambien de sitio al responder.
+     *
+     * @param {Array<Object>} storeResults
+     * @param {Array<string>} pendingIds
+     * @returns {Array<string>}
+     */
+    getSearchedStoreIds(storeResults, pendingIds) {
+        const searchedIds = [...pendingIds, ...storeResults.map((storeResult) => storeResult.storeId)];
+
+        return engine.getStoreIds().filter((storeId) => searchedIds.includes(storeId));
     },
 
     // === SETTERS ===
 
-    setStoreResults(storeResults) {
-        results.globals.storeResults = storeResults;
+    /**
+     * Guarda los resultados recibidos y los comercios que aún no han respondido.
+     *
+     * @param {Array<Object>} storeResults
+     * @param {Array<string>} pendingIds
+     */
+    setStoreResults(storeResults, pendingIds) {
+        const { globals } = results;
+
+        globals.storeResults = storeResults;
+        globals.pendingIds = pendingIds;
     },
 
     /**
@@ -152,30 +183,39 @@ const results = {
     },
 
     /**
-     * Guarda el resultado de una búsqueda y lo pinta.
+     * Guarda los resultados recibidos de una búsqueda y los pinta; se llama cada vez que responde un comercio.
      *
-     * @param {Array<Object>} storeResults Resultado de engine.search().
+     * @param {Array<Object>} storeResults Resultados recibidos hasta ahora.
+     * @param {Array<string>} pendingIds Comercios que aún no han respondido.
+     * @param {boolean} keepShown En las actualizaciones de una misma búsqueda, mantiene las tarjetas ya pintadas para que la página no salte.
      */
-    render(storeResults) {
+    render(storeResults, pendingIds = [], keepShown = false) {
         const self = results;
 
-        self.setStoreResults(storeResults);
-        self.repaint();
+        self.setStoreResults(storeResults, pendingIds);
+        self.repaint(keepShown ? self.globals.shownCount : 0);
     },
 
     /**
-     * Vuelve a pintar el último resultado con la ordenación actual: avisos de los comercios que fallan y el primer bloque de productos.
+     * Vuelve a pintar el último resultado con la ordenación actual: el estado de cada comercio y los productos.
+     *
+     * @param {number} minShown Tarjetas que deben quedar pintadas como mínimo; por defecto, el primer bloque.
      */
-    repaint() {
+    repaint(minShown = 0) {
         const self = results;
-        const { storeResults } = self.globals;
+        const { storeResults, pendingIds } = self.globals;
         const products = sort.apply(self.getProducts(storeResults));
         const failedStores = self.getFailedStores(storeResults);
+        const isPending = pendingIds.length > 0;
 
         self.setProducts(products);
         sort.toggle(products.length > 0);
-        self.paint(`${self.getNoticesHTML(failedStores)}${self.getProductsHTML(products, failedStores.length > 0)}`);
+        self.paint(`${self.getStoreStatusesHTML(storeResults, pendingIds)}${self.getProductsHTML(products, failedStores.length > 0, isPending)}`, isPending);
         self.appendPage();
+
+        while (self.globals.shownCount < Math.min(minShown, products.length)) {
+            self.appendPage();
+        }
     },
 
     // === HTML ===
@@ -192,40 +232,53 @@ const results = {
     },
 
     /**
-     * @param {Array<Object>} failedStores
+     * Pinta una etiqueta por cada comercio que aún está cargando, no responde o queda fuera de zona; los que han respondido desaparecen.
+     *
+     * @param {Array<Object>} storeResults
+     * @param {Array<string>} pendingIds
      * @returns {string}
      */
-    getNoticesHTML(failedStores) {
-        if (!failedStores.length) {
-            return '';
-        }
+    getStoreStatusesHTML(storeResults, pendingIds) {
+        const self = results;
+        const { PENDING_STATE, TEXTS } = self.constants;
+        const items = self.getSearchedStoreIds(storeResults, pendingIds)
+            .map((storeId) => ({ storeId, stateKey: (self.getStoreResult(storeResults, storeId) || { status: PENDING_STATE }).status }))
+            .filter(({ stateKey }) => stateKey !== engine.constants.STATUS.ok)
+            .map(({ storeId, stateKey }) => self.getStoreStatusHTML(storeId, stateKey))
+            .join('');
 
-        return `<div class="results__notices">${failedStores.map((storeResult) => results.getNoticeHTML(storeResult)).join('')}</div>`;
+        return items ? `<ul class="store-status-list" aria-label="${utils.escapeHtml(TEXTS.storeStatusLabel)}">${items}</ul>` : '';
     },
 
     /**
-     * @param {Object} storeResult
+     * @param {string} storeId
+     * @param {string} stateKey Clave de STORE_STATES.
      * @returns {string}
      */
-    getNoticeHTML(storeResult) {
-        const { text, modifier } = results.getStoreStatus(storeResult.status);
+    getStoreStatusHTML(storeId, stateKey) {
+        const { modifier, detail } = results.getStoreState(stateKey);
+        const { storeName } = engine.getOrigin(engine.getStoreById(storeId));
 
-        return `<p class="notice notice--${modifier}" role="status"><span class="notice__title">${utils.escapeHtml(storeResult.storeName)}:</span> ${utils.escapeHtml(text)}</p>`;
+        return `<li class="store-status store-status--${modifier}">
+            <span class="store-status__name">${utils.escapeHtml(storeName)}</span>
+            <span class="store-status__detail">${utils.escapeHtml(detail)}</span>
+        </li>`;
     },
 
     /**
      * Pinta el contador y la rejilla vacía con su marcador de final; las tarjetas las añade appendPage().
-     * Sin productos, el estado vacío solo si ningún comercio ha fallado.
+     * Sin productos: mientras falten comercios, nada (ya se ve cuáles faltan); al terminar, el estado vacío solo si ninguno ha fallado.
      *
      * @param {Array<Object>} products
      * @param {boolean} hasFailures
+     * @param {boolean} isPending
      * @returns {string}
      */
-    getProductsHTML(products, hasFailures) {
+    getProductsHTML(products, hasFailures, isPending) {
         const self = results;
 
         if (!products.length) {
-            return hasFailures ? '' : self.getStateHTML(self.getState('empty'));
+            return hasFailures || isPending ? '' : self.getStateHTML(self.getState('empty'));
         }
 
         return `<p class="results__count">${products.length} ${self.getCountLabel(products.length)}</p>

@@ -8,10 +8,16 @@ const engine = {
             error: 'error',
             unavailable: 'unavailable',
         },
+        // Repetir una búsqueda o cambiar los comercios marcados no vuelve a pedir lo ya recibido: ahorra datos
+        // y evita que los comercios con protección antibots (Alcampo, El Corte Inglés) bloqueen el proxy.
+        CACHE_TTL_MS: 10 * 60 * 1000,
+        // Con mala cobertura, un comercio colgado no debe retener los resultados de los demás.
+        STORE_TIMEOUT_MS: 10 * 1000,
     },
     globals: {
         stores: [],
         controller: null,
+        cache: new Map(),
     },
     elements: {},
     init() {},
@@ -39,6 +45,53 @@ const engine = {
         return engine.getStores().filter((store) => storeIds.includes(engine.getOrigin(store).storeId));
     },
 
+    /**
+     * Combina la cancelación de la búsqueda con el tiempo máximo de espera de un comercio.
+     *
+     * @param {AbortSignal} signal
+     * @returns {AbortSignal} La señal original en navegadores sin AbortSignal.any.
+     */
+    getStoreSignal(signal) {
+        return AbortSignal.any ? AbortSignal.any([signal, AbortSignal.timeout(engine.constants.STORE_TIMEOUT_MS)]) : signal;
+    },
+
+    getStoreById(storeId) {
+        return engine.getStoresByIds([storeId])[0] || null;
+    },
+
+    /**
+     * Devuelve los comercios que aún no han respondido.
+     *
+     * @param {Array<Object>} stores
+     * @param {Array<Object|null>} storeResults Mismo orden que stores; null mientras el comercio no responde.
+     * @returns {Array<string>} Sus identificadores.
+     */
+    getPendingIds(stores, storeResults) {
+        return stores.filter((store, index) => !storeResults[index]).map((store) => engine.getOrigin(store).storeId);
+    },
+
+    getCacheKey(store, term) {
+        return `${engine.getOrigin(store).storeId}|${term.trim().toLowerCase()}`;
+    },
+
+    /**
+     * Devuelve los productos guardados de una consulta anterior si aún no han caducado.
+     *
+     * @param {string} cacheKey
+     * @returns {Array<Object>|null}
+     */
+    getCachedItems(cacheKey) {
+        const self = engine;
+        const entry = self.globals.cache.get(cacheKey);
+
+        if (!entry || Date.now() - entry.savedAt > self.constants.CACHE_TTL_MS) {
+            self.globals.cache.delete(cacheKey);
+            return null;
+        }
+
+        return entry.items;
+    },
+
     // === SETTERS ===
 
     /**
@@ -49,6 +102,16 @@ const engine = {
     register(store) {
         engine.globals.stores.push(store);
         store.init();
+    },
+
+    /**
+     * Guarda los productos de una consulta que ha ido bien; las fallidas no se guardan para reintentarlas.
+     *
+     * @param {string} cacheKey
+     * @param {Array<Object>} items
+     */
+    setCachedItems(cacheKey, items) {
+        engine.globals.cache.set(cacheKey, { items, savedAt: Date.now() });
     },
 
     // === ACTIONS ===
@@ -66,33 +129,55 @@ const engine = {
     },
 
     /**
-     * Busca el término en los comercios indicados.
+     * Busca el término en los comercios indicados y avisa cada vez que responde uno, para pintar sin esperar al más lento.
      *
      * @param {string} term
      * @param {Array<string>} storeIds
      * @param {string|null} postalCode
+     * @param {Function} onProgress Recibe (storeResults, pendingIds): los resultados recibidos hasta ahora y los comercios que faltan.
      * @returns {Promise<Array<Object>|null>} Un resultado por comercio; null si otra búsqueda la ha sustituido.
      */
-    async search(term, storeIds, postalCode = null) {
+    async search(term, storeIds, postalCode = null, onProgress = () => {}) {
         const self = engine;
         const stores = self.getStoresByIds(storeIds);
+        const storeResults = new Array(stores.length).fill(null);
 
         self.abortPending();
         const controller = new AbortController();
         self.globals.controller = controller;
 
-        const outcomes = await Promise.allSettled(
-            stores.map((store) => self.searchStore(store, term, postalCode, controller.signal))
-        );
+        await Promise.all(stores.map(async (store, index) => {
+            const outcome = await self.settle(self.searchStore(store, term, postalCode, controller.signal));
+
+            if (controller.signal.aborted) {
+                return;
+            }
+
+            storeResults[index] = self.buildStoreResult(store, outcome, term);
+            onProgress(storeResults.filter(Boolean), self.getPendingIds(stores, storeResults));
+        }));
 
         if (controller.signal.aborted) {
             return null;
         }
 
-        const storeResults = outcomes.map((outcome, index) => self.buildStoreResult(stores[index], outcome, term));
         self.logSummary(term, storeResults);
 
         return storeResults;
+    },
+
+    /**
+     * Espera una promesa y devuelve su resultado con la forma de Promise.allSettled.
+     *
+     * @param {Promise} promise
+     * @returns {Promise<PromiseSettledResult>}
+     */
+    async settle(promise) {
+        try {
+            return { status: 'fulfilled', value: await promise };
+        } catch (reason) {
+            return { status: 'rejected', reason };
+        }
     },
 
     /**
@@ -105,15 +190,24 @@ const engine = {
      * @returns {Promise<{status: string, items: Array<Object>}>}
      */
     async searchStore(store, term, postalCode, signal) {
-        const { STATUS } = engine.constants;
+        const self = engine;
+        const { STATUS } = self.constants;
 
         if (!store.isAvailable(postalCode)) {
             return { status: STATUS.unavailable, items: [] };
         }
 
-        const raw = await store.search(term, signal);
+        const cacheKey = self.getCacheKey(store, term);
+        const cachedItems = self.getCachedItems(cacheKey);
 
-        return { status: STATUS.ok, items: store.toProducts(raw) };
+        if (cachedItems) {
+            return { status: STATUS.ok, items: cachedItems };
+        }
+
+        const items = store.toProducts(await store.search(term, self.getStoreSignal(signal)));
+        self.setCachedItems(cacheKey, items);
+
+        return { status: STATUS.ok, items };
     },
 
     /**

@@ -1,5 +1,6 @@
 /**
- * Adaptador de Lidl: busca en el catálogo de su tienda online, que admite peticiones desde otras webs.
+ * Adaptador de Lidl: busca en el catálogo de su tienda online.
+ * Su API admite peticiones desde otras webs, pero responde sin comprimir (casi 500 KB por búsqueda): va por el proxy, que comprime.
  * Online vende sobre todo bazar; la alimentación de tienda apenas aparece.
  */
 const storeLidl = {
@@ -68,7 +69,7 @@ const storeLidl = {
         const { constants } = storeLidl;
         const params = new URLSearchParams({ ...constants.QUERY_PARAMS, q: term });
 
-        return utils.requestJson(`${constants.ENDPOINT}?${params}`, { signal });
+        return utils.requestJson(utils.getProxiedUrl(`${constants.ENDPOINT}?${params}`), { signal });
     },
 
     /**

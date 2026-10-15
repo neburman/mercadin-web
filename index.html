@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mercadín · Compara precios del súper</title>
+    <meta name="description" content="Busca un producto y compara su precio en varios supermercados.">
+
+    <link rel="stylesheet" href="css/tokens.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/components/notice.css">
+    <link rel="stylesheet" href="css/components/postal-code.css">
+    <link rel="stylesheet" href="css/components/chip.css">
+    <link rel="stylesheet" href="css/components/store-filter.css">
+    <link rel="stylesheet" href="css/components/search.css">
+    <link rel="stylesheet" href="css/components/sort.css">
+    <link rel="stylesheet" href="css/components/results.css">
+    <link rel="stylesheet" href="css/components/product-card.css">
+
+    <script defer src="js/core/utils.js"></script>
+    <script defer src="js/core/product.js"></script>
+    <script defer src="js/core/engine.js"></script>
+    <script defer src="js/core/algolia.js"></script>
+    <script defer src="js/stores/aldi.js"></script>
+    <script defer src="js/stores/mercadona.js"></script>
+    <script defer src="js/stores/bm.js"></script>
+    <script defer src="js/core/postal-code.js"></script>
+    <script defer src="js/core/store-filter.js"></script>
+    <script defer src="js/core/search.js"></script>
+    <script defer src="js/core/sort.js"></script>
+    <script defer src="js/core/results.js"></script>
+    <script defer src="js/core/app.js"></script>
+</head>
+<body>
+    <header class="header container">
+        <h1 class="header__title">Mercadín</h1>
+        <p class="header__subtitle">Compara precios de supermercados</p>
+        <p class="fine-print header__disclaimer" role="note">Precios orientativos de la tienda online; pueden variar en la tienda física. Proyecto no afiliado a ningún comercio.</p>
+    </header>
+
+    <main class="main container">
+        <section id="postal-code" class="postal-code" aria-label="Código postal">
+            <form class="field postal-code__form">
+                <label class="field-label" for="postal-code-input">Tu código postal</label>
+                <div class="postal-code__row">
+                    <input id="postal-code-input" class="control postal-code__input" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="5" placeholder="46001">
+                    <p class="postal-code__status" role="status"></p>
+                </div>
+                <p class="fine-print">* Algunos supermercados tienen precios distintos según la zona.</p>
+            </form>
+        </section>
+
+        <fieldset id="store-filter" class="store-filter">
+            <legend class="field-label">¿Dónde quieres buscar?</legend>
+            <div class="chip-group store-filter__options"></div>
+        </fieldset>
+
+        <section id="search" class="search" aria-label="Buscador">
+            <form class="field search__form" role="search">
+                <label class="field-label" for="search-input">¿Qué quieres comprar?</label>
+                <div class="search__row">
+                    <input id="search-input" class="control search__input" type="search" name="q" placeholder="Por ejemplo: leche, aceite, pan" autocomplete="off" enterkeyhint="search">
+                    <button class="button search__button" type="submit">Buscar</button>
+                </div>
+            </form>
+        </section>
+
+        <fieldset id="sort" class="sort" hidden>
+            <legend class="sort__label">Ordenar por</legend>
+            <div class="chip-group sort__options"></div>
+        </fieldset>
+
+        <section id="results" class="results" aria-live="polite" aria-busy="false"></section>
+    </main>
+</body>
+</html>

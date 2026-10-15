@@ -1,5 +1,5 @@
 /**
- * Utilidades compartidas por todos los componentes: HTTP, almacenamiento, formato, escape y eventos.
+ * Utilidades compartidas por todos los componentes: HTTP, almacenamiento, texto, formato, escape y eventos.
  */
 const utils = {
     constants: {
@@ -7,6 +7,12 @@ const utils = {
         HTML_ENTITIES: { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' },
         // Worker de Cloudflare para los comercios sin CORS; cada dominio debe estar en su lista ALLOWED_HOSTS.
         PROXY_URL: 'https://mercadin-proxy.neburman.workers.dev/',
+        DIACRITICS_PATTERN: /[̀-ͯ]/g,
+        WORD_SEPARATOR_PATTERN: /[^a-z0-9ñ]+/,
+        // Palabras más cortas («de», «la») no sirven para decidir si un producto encaja con la búsqueda.
+        MIN_TERM_WORD_LENGTH: 3,
+        // Se quita el plural para que «pistachos» encuentre «Pistacho» y al revés.
+        PLURAL_SUFFIX_PATTERN: /(es|s)$/,
     },
     globals: {},
     elements: {},
@@ -73,6 +79,46 @@ const utils = {
         } catch {
             // Sin almacenamiento la selección solo dura hasta recargar.
         }
+    },
+
+    // === TEXT ===
+
+    /**
+     * Pasa un texto a minúsculas y sin tildes para compararlo.
+     *
+     * @param {*} text
+     * @returns {string}
+     */
+    normalizeText(text) {
+        return String(text ?? '').toLowerCase().normalize('NFD').replace(utils.constants.DIACRITICS_PATTERN, '');
+    },
+
+    /**
+     * Devuelve las raíces de las palabras significativas de una búsqueda.
+     *
+     * @param {string} term
+     * @returns {Array<string>} Por ejemplo, «Aceites de oliva» → ['aceit', 'oliva'].
+     */
+    getTermStems(term) {
+        const { WORD_SEPARATOR_PATTERN, MIN_TERM_WORD_LENGTH, PLURAL_SUFFIX_PATTERN } = utils.constants;
+
+        return utils.normalizeText(term)
+            .split(WORD_SEPARATOR_PATTERN)
+            .filter((word) => word.length >= MIN_TERM_WORD_LENGTH)
+            .map((word) => word.replace(PLURAL_SUFFIX_PATTERN, ''));
+    },
+
+    /**
+     * Indica si el texto contiene todas las palabras de la búsqueda, sin tener en cuenta tildes ni plurales.
+     *
+     * @param {string} text
+     * @param {string} term
+     * @returns {boolean}
+     */
+    matchesTerm(text, term) {
+        const normalizedText = utils.normalizeText(text);
+
+        return utils.getTermStems(term).every((stem) => normalizedText.includes(stem));
     },
 
     // === FORMAT ===

@@ -22,19 +22,35 @@ const results = {
         TEXTS: {
             outOfStock: 'Sin stock online',
         },
+        // Tarjetas que se añaden cada vez que el final de la rejilla se acerca a la pantalla.
+        PAGE_SIZE: 24,
+        // Distancia a la que se pinta el siguiente bloque, para que no se vea el corte al hacer scroll.
+        SCROLL_MARGIN: '600px',
     },
     globals: {
         storeResults: [],
+        products: [],
+        shownCount: 0,
+        observer: null,
     },
     elements: {
         container: '#results',
+        grid: '#results .results__grid',
+        sentinel: '#results .results__sentinel',
     },
 
     /**
-     * Pinta el estado inicial.
+     * Prepara la carga por scroll y pinta el estado inicial.
      */
     init() {
-        results.renderState('initial');
+        const self = results;
+
+        self.globals.observer = new IntersectionObserver((entries) => {
+            if (entries.some((entry) => entry.isIntersecting)) {
+                self.appendPage();
+            }
+        }, { rootMargin: self.constants.SCROLL_MARGIN });
+        self.renderState('initial');
     },
 
     listeners() {},
@@ -67,10 +83,22 @@ const results = {
         results.globals.storeResults = storeResults;
     },
 
+    /**
+     * Guarda los productos ya ordenados que se irán pintando por bloques.
+     *
+     * @param {Array<Object>} products
+     */
+    setProducts(products) {
+        const { globals } = results;
+
+        globals.products = products;
+        globals.shownCount = 0;
+    },
+
     // === ACTIONS ===
 
     /**
-     * Sustituye el contenido del contenedor.
+     * Sustituye el contenido del contenedor y deja de vigilar el scroll del contenido anterior.
      *
      * @param {string} html
      * @param {boolean} isBusy
@@ -78,8 +106,37 @@ const results = {
     paint(html, isBusy = false) {
         const container = document.querySelector(results.elements.container);
 
+        results.globals.observer.disconnect();
         container.setAttribute('aria-busy', String(isBusy));
         container.innerHTML = html;
+    },
+
+    /**
+     * Añade el siguiente bloque de tarjetas; al pintar el último, quita el marcador de final.
+     */
+    appendPage() {
+        const self = results;
+        const { globals, elements, constants } = self;
+        const grid = document.querySelector(elements.grid);
+        const sentinel = document.querySelector(elements.sentinel);
+
+        if (!grid || !sentinel) {
+            return;
+        }
+
+        const page = globals.products.slice(globals.shownCount, globals.shownCount + constants.PAGE_SIZE);
+
+        grid.insertAdjacentHTML('beforeend', page.map((item) => self.getProductCardHTML(item)).join(''));
+        globals.shownCount += page.length;
+        globals.observer.unobserve(sentinel);
+
+        if (globals.shownCount >= globals.products.length) {
+            sentinel.remove();
+            return;
+        }
+
+        // Volver a observar fuerza una comprobación: en pantallas altas el marcador puede seguir visible tras añadir el bloque.
+        globals.observer.observe(sentinel);
     },
 
     /**
@@ -107,7 +164,7 @@ const results = {
     },
 
     /**
-     * Vuelve a pintar el último resultado con la ordenación actual: avisos de los comercios que fallan y productos.
+     * Vuelve a pintar el último resultado con la ordenación actual: avisos de los comercios que fallan y el primer bloque de productos.
      */
     repaint() {
         const self = results;
@@ -115,8 +172,10 @@ const results = {
         const products = sort.apply(self.getProducts(storeResults));
         const failedStores = self.getFailedStores(storeResults);
 
+        self.setProducts(products);
         sort.toggle(products.length > 0);
         self.paint(`${self.getNoticesHTML(failedStores)}${self.getProductsHTML(products, failedStores.length > 0)}`);
+        self.appendPage();
     },
 
     // === HTML ===
@@ -155,7 +214,8 @@ const results = {
     },
 
     /**
-     * Pinta la rejilla; sin productos, el estado vacío solo si ningún comercio ha fallado.
+     * Pinta el contador y la rejilla vacía con su marcador de final; las tarjetas las añade appendPage().
+     * Sin productos, el estado vacío solo si ningún comercio ha fallado.
      *
      * @param {Array<Object>} products
      * @param {boolean} hasFailures
@@ -169,7 +229,8 @@ const results = {
         }
 
         return `<p class="results__count">${products.length} ${self.getCountLabel(products.length)}</p>
-            <ul class="results__grid">${products.map((item) => self.getProductCardHTML(item)).join('')}</ul>`;
+            <ul class="results__grid" aria-live="off"></ul>
+            <div class="results__sentinel" aria-hidden="true"></div>`;
     },
 
     /**

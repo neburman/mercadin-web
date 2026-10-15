@@ -1,3 +1,52 @@
+.store-filter__summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    font-weight: var(--font-weight-bold);
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+}
+
+.store-filter__summary::-webkit-details-marker {
+    display: none;
+}
+
+.store-filter__summary::after {
+    content: "▾" / "";
+    color: var(--color-text-muted);
+    transition: transform var(--transition);
+}
+
+.store-filter__dropdown[open] .store-filter__summary::after {
+    transform: rotate(180deg);
+}
+
+.store-filter__summary:hover {
+    border-color: var(--color-primary);
+}
+
+.store-filter__summary:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-offset);
+}
+
+.store-filter__options {
+    margin-top: var(--space-3);
+}
+
+/* En PC se ven todos los comercios sin desplegable; store-filter.js lo mantiene abierto cuando el resumen está oculto. */
+@media (min-width: 1025px) {
+    .store-filter__summary {
+        display: none;
+    }
+
+    .store-filter__options {
+        margin-top: 0;
+    }
+}
+
 .store-filter__option {
     padding-left: var(--space-2);
 }

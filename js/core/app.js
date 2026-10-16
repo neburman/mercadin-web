@@ -4,7 +4,7 @@
 const app = {
     constants: {
         STORES: [storeAldi, storeMercadona, storeLidl, storeDia, storeCarrefour, storeConsum, storeAlcampo, storeBm, storeEroski, storeElCorteIngles, storeCostco, storeAction],
-        COMPONENTS: [theme, sort, view, results, postalCodeForm, storeFilter, search, dropdown],
+        COMPONENTS: [theme, sort, view, results, cart, postalCodeForm, storeFilter, search, dropdown],
     },
     globals: {},
     elements: {},

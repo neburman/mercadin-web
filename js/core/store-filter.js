@@ -15,6 +15,10 @@ const storeFilter = {
             none: 'Ningún comercio',
             count: (total) => `${total} comercios`,
         },
+        TOGGLE_TEXTS: {
+            clear: 'Desmarcar todos',
+            selectAll: 'Marcar todos',
+        },
     },
     globals: {
         selectedIds: [],
@@ -23,10 +27,11 @@ const storeFilter = {
         summary: '#store-filter .store-filter__summary',
         options: '#store-filter .store-filter__options',
         checkbox: '#store-filter .store-filter__checkbox',
+        toggle: '#store-filter .store-filter__toggle',
     },
 
     /**
-     * Recupera la selección guardada, pinta las opciones y el resumen del desplegable, y registra los listeners.
+     * Recupera la selección guardada, pinta las opciones, el resumen del desplegable y el botón de marcar o desmarcar todos, y registra los listeners.
      */
     init() {
         const self = storeFilter;
@@ -34,6 +39,7 @@ const storeFilter = {
         self.setSelectedIds(self.getStoredSelection());
         self.renderOptions();
         self.renderSummary();
+        self.renderToggle();
         self.listeners();
     },
 
@@ -42,10 +48,12 @@ const storeFilter = {
         const { elements, constants } = self;
 
         utils.addListener('change', elements.checkbox, () => {
-            self.setSelectedIds(self.getCheckedIds());
-            self.saveSelection();
-            self.renderSummary();
-            search.refresh();
+            self.applySelection(self.getCheckedIds());
+        }, constants.workspace);
+
+        utils.addListener('click', elements.toggle, () => {
+            self.applySelection(self.getSelectedIds().length ? [] : engine.getStoreIds());
+            self.renderOptions();
         }, constants.workspace);
     },
 
@@ -95,6 +103,17 @@ const storeFilter = {
         return utils.formatList(engine.getStoresByIds(selectedIds).map((store) => engine.getOrigin(store).storeName));
     },
 
+    /**
+     * Devuelve el texto del botón: desmarcar mientras quede alguno marcado; si no, marcar todos.
+     *
+     * @returns {string}
+     */
+    getToggleText() {
+        const { TOGGLE_TEXTS } = storeFilter.constants;
+
+        return storeFilter.getSelectedIds().length ? TOGGLE_TEXTS.clear : TOGGLE_TEXTS.selectAll;
+    },
+
     getCheckedIds() {
         return [...document.querySelectorAll(storeFilter.elements.checkbox)]
             .filter((checkbox) => checkbox.checked)
@@ -119,14 +138,28 @@ const storeFilter = {
     // === ACTIONS ===
 
     /**
-     * Pinta una casilla por comercio registrado.
+     * Cambia los comercios marcados, guarda la selección, actualiza el resumen y el botón, y repite la búsqueda.
+     *
+     * @param {Array<string>} storeIds
+     */
+    applySelection(storeIds) {
+        const self = storeFilter;
+
+        self.setSelectedIds(storeIds);
+        self.saveSelection();
+        self.renderSummary();
+        self.renderToggle();
+        search.refresh();
+    },
+
+    /**
+     * Pinta el conmutador de marcar o desmarcar todos y una casilla por comercio registrado.
      */
     renderOptions() {
         const self = storeFilter;
 
-        document.querySelector(self.elements.options).innerHTML = engine.getStores()
-            .map((store) => self.getOptionHTML(store))
-            .join('');
+        document.querySelector(self.elements.options).innerHTML = self.getToggleOptionHTML()
+            + engine.getStores().map((store) => self.getOptionHTML(store)).join('');
     },
 
     /**
@@ -136,7 +169,27 @@ const storeFilter = {
         document.querySelector(storeFilter.elements.summary).textContent = storeFilter.getSummaryText();
     },
 
+    /**
+     * Pinta el texto de los conmutadores de marcar o desmarcar todos: el del título y el de la lista.
+     */
+    renderToggle() {
+        const self = storeFilter;
+
+        document.querySelectorAll(self.elements.toggle).forEach((toggle) => {
+            toggle.textContent = self.getToggleText();
+        });
+    },
+
     // === HTML ===
+
+    /**
+     * Pinta el conmutador de marcar o desmarcar todos como primera opción de la lista; el CSS lo oculta en PC.
+     *
+     * @returns {string}
+     */
+    getToggleOptionHTML() {
+        return `<button class="chip store-filter__toggle store-filter__toggle--option" type="button">${utils.escapeHtml(storeFilter.getToggleText())}</button>`;
+    },
 
     /**
      * @param {Object} store Adaptador registrado en el motor.

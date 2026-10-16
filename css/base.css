@@ -73,6 +73,12 @@ a {
     margin-bottom: var(--space-2);
 }
 
+.header__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
 .header__title {
     display: flex;
     align-items: center;
@@ -155,4 +161,18 @@ a {
 .button:hover {
     background: var(--color-primary-hover);
     border-color: var(--color-primary-hover);
+}
+
+.button--secondary {
+    background: var(--color-surface);
+    color: var(--color-primary);
+}
+
+.button--secondary:hover {
+    background: var(--color-selected-bg);
+}
+
+.button:disabled {
+    opacity: var(--opacity-off);
+    pointer-events: none;
 }

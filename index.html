@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="css/components/results.css">
     <link rel="stylesheet" href="css/components/product-card.css">
     <link rel="stylesheet" href="css/components/theme-toggle.css">
+    <link rel="stylesheet" href="css/components/cart.css">
 
     <!-- Sin defer: el tema tiene que aplicarse antes de pintar la página. -->
     <script src="js/core/utils.js"></script>
@@ -47,6 +48,7 @@
     <script defer src="js/core/search.js"></script>
     <script defer src="js/core/sort.js"></script>
     <script defer src="js/core/view.js"></script>
+    <script defer src="js/core/cart.js"></script>
     <script defer src="js/core/results.js"></script>
     <script defer src="js/core/app.js"></script>
 </head>
@@ -57,17 +59,21 @@
                 <img class="header__logo" src="img/logo-192.jpg" alt="" width="192" height="192">
                 Mercadín
             </h1>
-            <button id="theme-toggle" class="theme-toggle" type="button" role="switch" aria-checked="false" aria-label="Modo oscuro">
-                <span class="theme-toggle__track">
-                    <span class="theme-toggle__thumb"></span>
-                    <span class="theme-toggle__icon theme-toggle__icon--sun" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+            <div class="header__actions">
+                <button id="theme-toggle" class="theme-toggle" type="button" role="switch" aria-checked="false" aria-label="Modo oscuro">
+                    <span class="theme-toggle__track">
+                        <span class="theme-toggle__thumb"></span>
+                        <span class="theme-toggle__icon theme-toggle__icon--sun" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+                        </span>
+                        <span class="theme-toggle__icon theme-toggle__icon--moon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                        </span>
                     </span>
-                    <span class="theme-toggle__icon theme-toggle__icon--moon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-                    </span>
-                </span>
-            </button>
+                </button>
+                <!-- El icono y el contador los pinta cart.js. -->
+                <button id="cart-toggle" class="cart-button" type="button" aria-haspopup="dialog" aria-controls="cart" aria-label="Lista de la compra"></button>
+            </div>
         </div>
         <p class="header__subtitle">Compara precios de supermercados</p>
         <p class="fine-print header__disclaimer" role="note">Precios orientativos de la tienda online; pueden variar en la tienda física. Proyecto no afiliado a ningún comercio.</p>
@@ -84,7 +90,10 @@
         </section>
 
         <fieldset id="store-filter" class="store-filter">
-            <legend class="field-label">¿Dónde quieres buscar?</legend>
+            <legend class="field-label store-filter__legend">
+                ¿Dónde quieres buscar?
+                <button class="store-filter__toggle store-filter__toggle--legend" type="button"></button>
+            </legend>
             <details class="dropdown store-filter__dropdown">
                 <summary class="control dropdown__summary store-filter__summary"></summary>
                 <div class="chip-group dropdown__content dropdown__content--list store-filter__options"></div>
@@ -118,5 +127,24 @@
 
         <section id="results" class="results" aria-live="polite" aria-busy="false"></section>
     </main>
+
+    <dialog id="cart" class="cart" aria-labelledby="cart-title">
+        <div class="cart__panel">
+            <div class="cart__header">
+                <h2 id="cart-title" class="cart__title">Lista de la compra</h2>
+                <button class="cart__icon-button cart__close" type="button" aria-label="Cerrar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+            </div>
+            <div class="cart__content"></div>
+            <div class="cart__footer">
+                <p class="cart__total">Pendiente: <strong class="cart__total-amount"></strong></p>
+                <div class="cart__actions">
+                    <button class="button button--secondary cart__clear" type="button">Vaciar</button>
+                    <button class="button cart__remove-bought" type="button">Quitar marcados</button>
+                </div>
+            </div>
+        </div>
+    </dialog>
 </body>
 </html>

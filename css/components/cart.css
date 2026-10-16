@@ -1,0 +1,340 @@
+/* Botón de la cabecera: el área táctil es de --touch-size, pero el círculo visible mide lo mismo que el interruptor de tema. */
+.cart-button {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: var(--touch-size);
+    height: var(--touch-size);
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: none;
+    color: var(--color-text);
+    cursor: pointer;
+}
+
+.cart-button__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--header-control-size);
+    height: var(--header-control-size);
+    border: var(--border-width-strong) solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-muted-bg);
+    transition: border-color var(--transition);
+}
+
+.cart-button:hover .cart-button__icon {
+    border-color: var(--color-primary);
+}
+
+.cart-button__icon svg {
+    width: var(--cart-icon-size);
+    height: var(--cart-icon-size);
+}
+
+.cart-button__count {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: var(--badge-size);
+    height: var(--badge-size);
+    padding: 0 var(--space-1);
+    border-radius: var(--radius-pill);
+    background: var(--color-sale);
+    color: var(--color-on-sale);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--badge-size);
+    text-align: center;
+}
+
+/* Modal: cabecera y pie fijos, la lista hace scroll entre ambos. */
+.cart {
+    width: min(100% - 2 * var(--space-4), var(--cart-width));
+    max-width: none;
+    max-height: calc(100dvh - 2 * var(--space-6));
+    padding: 0;
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+    color: var(--color-text);
+    box-shadow: var(--shadow);
+}
+
+.cart[open] {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Si se quita el control que tenía el foco, el navegador se lo da al dialog; no es un control y no debe marcarse. */
+.cart:focus-visible {
+    outline: none;
+}
+
+.cart::backdrop {
+    background: var(--color-backdrop);
+}
+
+.cart__panel {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.cart__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+    border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.cart__title {
+    font-size: var(--font-size-lg);
+}
+
+/* Relativo para que los textos .visually-hidden (absolutos) queden dentro del scroll y no hagan scroll en el dialog. */
+.cart__content {
+    position: relative;
+    display: grid;
+    flex: 1;
+    align-content: start;
+    /* Con overflow: hidden los comercios podrían encogerse para caber; tienen que medir lo que su contenido. */
+    grid-auto-rows: max-content;
+    gap: var(--space-4);
+    min-height: 0;
+    padding: var(--space-4);
+    overflow-y: auto;
+}
+
+.cart__icon-button {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: var(--touch-size);
+    height: var(--touch-size);
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--color-text);
+    cursor: pointer;
+    transition: background-color var(--transition);
+}
+
+.cart__icon-button:hover {
+    background: var(--color-muted-bg);
+}
+
+.cart__icon-button svg {
+    width: var(--icon-size);
+    height: var(--icon-size);
+}
+
+.cart__check {
+    flex-shrink: 0;
+    width: var(--check-size);
+    height: var(--check-size);
+    margin: 0;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+}
+
+.cart__empty {
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-8) var(--space-4);
+    text-align: center;
+}
+
+.cart__empty-title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+}
+
+.cart__empty-text {
+    color: var(--color-text-muted);
+}
+
+/* Comercio: cabecera con checkbox, logo, nombre y subtotal pendiente. */
+.cart__store {
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.cart__store-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: var(--color-muted-bg);
+    font-weight: var(--font-weight-bold);
+    cursor: pointer;
+}
+
+.cart__store-logo {
+    flex-shrink: 0;
+    width: var(--cart-logo-size);
+    height: var(--cart-logo-size);
+    padding: var(--space-1);
+    border-radius: var(--radius-pill);
+    background: var(--color-logo-bg);
+    object-fit: contain;
+    box-sizing: content-box;
+}
+
+.cart__store-name {
+    flex: 1;
+    min-width: 0;
+}
+
+.cart__items {
+    padding: 0;
+    list-style: none;
+}
+
+/* Producto: checkbox, miniatura y datos a la izquierda; cantidad y papelera a la derecha. */
+.cart__item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+}
+
+.cart__item + .cart__item {
+    border-top: var(--border-width) solid var(--color-border);
+}
+
+.cart__item-main {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+    cursor: pointer;
+}
+
+.cart__item-media {
+    display: flex;
+    flex: 0 0 var(--cart-thumb-size);
+    align-items: center;
+    justify-content: center;
+    height: var(--cart-thumb-size);
+    border-radius: var(--radius-sm);
+    background: var(--color-muted-bg);
+    overflow: hidden;
+}
+
+.cart__item-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.cart__item-body {
+    display: grid;
+    min-width: 0;
+}
+
+.cart__item-name {
+    font-size: var(--font-size-sm);
+}
+
+.cart__item-brand,
+.cart__item-unit-price {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+}
+
+.cart__item-price {
+    font-weight: var(--font-weight-bold);
+}
+
+.cart__item--bought .cart__item-name,
+.cart__item--bought .cart__item-price {
+    text-decoration: line-through;
+}
+
+.cart__item--bought .cart__item-media,
+.cart__item--bought .cart__item-body,
+.cart__item--bought .cart__quantity {
+    opacity: var(--opacity-off);
+}
+
+.cart__item-actions {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+/* Sin selección de texto: pulsar rápido −/+ no debe marcar en azul la cantidad. */
+.cart__quantity {
+    display: flex;
+    align-items: center;
+    user-select: none;
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-pill);
+}
+
+.cart__quantity .cart__icon-button {
+    border-radius: var(--radius-pill);
+}
+
+.cart__quantity-value {
+    min-width: var(--space-6);
+    font-weight: var(--font-weight-bold);
+    text-align: center;
+}
+
+.cart__footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    border-top: var(--border-width) solid var(--color-border);
+}
+
+.cart__total {
+    font-size: var(--font-size-lg);
+}
+
+.cart__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+/* Móvil: el modal ocupa toda la pantalla y la cantidad baja a su propia línea. */
+@media (max-width: 599px) {
+    .cart {
+        width: 100%;
+        height: 100dvh;
+        max-height: 100dvh;
+        margin: 0;
+        border: 0;
+        border-radius: 0;
+    }
+
+    .cart__item {
+        flex-wrap: wrap;
+    }
+
+    .cart__item-main {
+        flex-basis: 100%;
+    }
+
+    .cart__item-actions {
+        margin-left: auto;
+    }
+}

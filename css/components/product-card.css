@@ -32,8 +32,11 @@
     display: none;
 }
 
+/* Ocupa todo el alto de la tarjeta para que el botón de la lista quede abajo en todas las de la misma fila. */
 .product-card__body {
-    display: grid;
+    display: flex;
+    flex-direction: column;
+    align-self: stretch;
     gap: var(--space-1);
     flex: 1;
     min-width: 0;
@@ -77,11 +80,81 @@
 }
 
 .product-card__badge {
-    justify-self: start;
+    align-self: flex-start;
     padding: var(--space-1) var(--space-2);
     border-radius: var(--radius-sm);
     background: var(--color-muted-bg);
     font-size: var(--font-size-sm);
+}
+
+/* Control de la lista: botón de añadir o, si ya está en la lista, selector −/cantidad/+. */
+.product-card__cart {
+    display: flex;
+    align-self: flex-start;
+    margin-top: auto;
+}
+
+.product-card__cart-add,
+.product-card__cart-stepper {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--touch-size);
+    border: var(--border-width) solid var(--color-primary);
+    border-radius: var(--radius-pill);
+    background: var(--color-surface);
+    color: var(--color-primary);
+    user-select: none;
+}
+
+.product-card__cart-add {
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-4);
+    font: inherit;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    cursor: pointer;
+    transition: background-color var(--transition);
+}
+
+.product-card__cart-add:hover,
+.product-card__cart-stepper {
+    background: var(--color-selected-bg);
+}
+
+/* Descuenta el borde del selector para que mida lo mismo que el botón de añadir y la tarjeta no salte al cambiar. */
+.product-card__cart-step {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: calc(var(--touch-size) - 2 * var(--border-width));
+    height: calc(var(--touch-size) - 2 * var(--border-width));
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: none;
+    color: inherit;
+    cursor: pointer;
+    transition: background-color var(--transition);
+}
+
+.product-card__cart-step:hover {
+    background: var(--color-surface);
+}
+
+.product-card__cart-icon {
+    display: flex;
+}
+
+.product-card__cart-icon svg,
+.product-card__cart-step svg {
+    width: var(--icon-size);
+    height: var(--icon-size);
+}
+
+.product-card__cart-quantity {
+    min-width: var(--space-6);
+    font-weight: var(--font-weight-bold);
+    text-align: center;
 }
 
 @media (max-width: 599px) {
@@ -93,6 +166,7 @@
 
 /* Vista de mosaico: imagen grande arriba y solo nombre, precio y precio por unidad. */
 .results[data-view="mosaic"] .product-card {
+    position: relative;
     flex-direction: column;
     align-items: stretch;
     gap: var(--space-2);
@@ -133,9 +207,45 @@
     display: none;
 }
 
-/* Fuera de la vista, pero los lectores de pantalla siguen leyendo el comercio y el «sin stock». */
+/* En mosaico el control va sobre la esquina de la imagen: añadir solo con el icono y un selector más compacto. */
+.results[data-view="mosaic"] .product-card__cart {
+    position: absolute;
+    top: calc(var(--space-2) + var(--space-1));
+    right: calc(var(--space-2) + var(--space-1));
+    margin: 0;
+}
+
+.results[data-view="mosaic"] .product-card__cart-add,
+.results[data-view="mosaic"] .product-card__cart-stepper {
+    box-shadow: var(--shadow);
+}
+
+.results[data-view="mosaic"] .product-card__cart-add {
+    justify-content: center;
+    width: var(--touch-size);
+    height: var(--touch-size);
+    padding: 0;
+}
+
+.results[data-view="mosaic"] .product-card__cart-stepper {
+    min-height: 0;
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+}
+
+.results[data-view="mosaic"] .product-card__cart-step {
+    width: var(--cart-step-size-compact);
+    height: var(--cart-step-size-compact);
+}
+
+.results[data-view="mosaic"] .product-card__cart-step:hover {
+    background: var(--color-primary-hover);
+}
+
+/* Fuera de la vista, pero los lectores de pantalla siguen leyendo el comercio, el «sin stock» y el texto del botón de la lista. */
 .results[data-view="mosaic"] .product-card__store,
-.results[data-view="mosaic"] .product-card__badge {
+.results[data-view="mosaic"] .product-card__badge,
+.results[data-view="mosaic"] .product-card__cart-label {
     position: absolute;
     width: 1px;
     height: 1px;

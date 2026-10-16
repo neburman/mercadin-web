@@ -26,7 +26,12 @@ const results = {
         TEXTS: {
             outOfStock: 'Sin stock online',
             storeStatusLabel: 'Comercios cargando o sin respuesta',
+            addToCart: 'Añadir a la lista',
+            inCart: 'En la lista',
         },
+        // Unidades que suma o resta cada control de la lista en las tarjetas.
+        CART_ACTION_DELTAS: { add: 1, increase: 1, decrease: -1 },
+        CART_FOCUS_FALLBACKS: { add: 'increase', decrease: 'add' },
         // Tarjetas que se añaden cada vez que el final de la rejilla se acerca a la pantalla.
         PAGE_SIZE: 24,
         // Distancia a la que se pinta el siguiente bloque, para que no se vea el corte al hacer scroll.
@@ -43,10 +48,13 @@ const results = {
         container: '#results',
         grid: '#results .results__grid',
         sentinel: '#results .results__sentinel',
+        cartControl: '#results .product-card__cart',
+        cartAction: '#results .product-card__cart [data-cart-action]',
+        getCartAction: (action) => `[data-cart-action="${action}"]`,
     },
 
     /**
-     * Prepara la carga por scroll y pinta el estado inicial.
+     * Prepara la carga por scroll, pinta el estado inicial y registra los listeners.
      */
     init() {
         const self = results;
@@ -57,9 +65,17 @@ const results = {
             }
         }, { rootMargin: self.constants.SCROLL_MARGIN });
         self.renderState('initial');
+        self.listeners();
     },
 
-    listeners() {},
+    listeners() {
+        const self = results;
+        const { elements } = self;
+
+        utils.addListener('click', elements.cartAction, function () {
+            self.applyCartAction(this.closest(elements.cartControl).dataset.cartKey, this.dataset.cartAction);
+        }, elements.container);
+    },
 
     // === GETTERS ===
 
@@ -81,6 +97,14 @@ const results = {
 
     getProducts(storeResults) {
         return storeResults.flatMap((storeResult) => storeResult.products);
+    },
+
+    getProductByCartKey(cartKey) {
+        return results.globals.products.find((item) => cart.getKey(item) === cartKey) || null;
+    },
+
+    getCartActionDelta(action) {
+        return results.constants.CART_ACTION_DELTAS[action] || 0;
     },
 
     getFailedStores(storeResults) {
@@ -169,6 +193,47 @@ const results = {
 
         // Volver a observar fuerza una comprobación: en pantallas altas el marcador puede seguir visible tras añadir el bloque.
         globals.observer.observe(sentinel);
+    },
+
+    /**
+     * Suma o resta una unidad del producto de una tarjeta; al añadirlo por primera vez guarda sus datos en la lista.
+     *
+     * @param {string} cartKey
+     * @param {string} action Clave de CART_ACTION_DELTAS.
+     */
+    applyCartAction(cartKey, action) {
+        const self = results;
+        const delta = self.getCartActionDelta(action);
+        const item = self.getProductByCartKey(cartKey);
+
+        if (delta > 0 && item) {
+            cart.add(item);
+            return;
+        }
+
+        if (delta < 0) {
+            cart.changeQuantity(cartKey, delta);
+        }
+    },
+
+    /**
+     * Refleja en las tarjetas ya pintadas cuántas unidades de cada producto hay en la lista, sin repintar la rejilla.
+     */
+    updateCartButtons() {
+        const self = results;
+        const { elements, constants } = self;
+
+        document.querySelectorAll(elements.cartControl).forEach((control) => {
+            const focusedAction = control.contains(document.activeElement) ? document.activeElement.dataset.cartAction : '';
+
+            control.innerHTML = self.getCartControlContentHTML(cart.getQuantity(control.dataset.cartKey));
+
+            // El botón pulsado se sustituye: el foco pasa al mismo control o, si ya no está (añadir, quitar la última unidad), a su equivalente.
+            if (focusedAction) {
+                (control.querySelector(elements.getCartAction(focusedAction))
+                    || control.querySelector(elements.getCartAction(constants.CART_FOCUS_FALLBACKS[focusedAction])))?.focus();
+            }
+        });
     },
 
     /**
@@ -308,8 +373,59 @@ const results = {
                 ${self.getPriceHTML(item)}
                 <p class="product-card__unit-price">${utils.escapeHtml(utils.formatUnitPrice(item.unitPrice, item.unit))}</p>
                 ${item.available ? '' : `<span class="product-card__badge">${TEXTS.outOfStock}</span>`}
+                ${self.getCartControlHTML(item)}
             </div>
         </li>`;
+    },
+
+    /**
+     * Pinta el control de la lista de la compra de la tarjeta; su contenido cambia con las unidades sin repintar la tarjeta.
+     *
+     * @param {Object} item
+     * @returns {string}
+     */
+    getCartControlHTML(item) {
+        const cartKey = cart.getKey(item);
+
+        return `<div class="product-card__cart" data-cart-key="${utils.escapeHtml(cartKey)}">${results.getCartControlContentHTML(cart.getQuantity(cartKey))}</div>`;
+    },
+
+    /**
+     * Sin unidades, el botón de añadir; con unidades, el selector −/cantidad/+.
+     *
+     * @param {number} quantity Unidades del producto que ya hay en la lista.
+     * @returns {string}
+     */
+    getCartControlContentHTML(quantity) {
+        return quantity ? results.getCartStepperHTML(quantity) : results.getCartAddHTML();
+    },
+
+    /**
+     * Pinta el botón de añadir; en mosaico solo se ve el icono.
+     *
+     * @returns {string}
+     */
+    getCartAddHTML() {
+        const { TEXTS } = results.constants;
+
+        return `<button class="product-card__cart-add" type="button" data-cart-action="add"><span class="product-card__cart-icon" aria-hidden="true">${cart.getIcon('cart')}</span><span class="product-card__cart-label">${utils.escapeHtml(TEXTS.addToCart)}</span></button>`;
+    },
+
+    /**
+     * Pinta el selector de unidades; con una sola, restar quita el producto y lleva icono de papelera.
+     *
+     * @param {number} quantity
+     * @returns {string}
+     */
+    getCartStepperHTML(quantity) {
+        const { TEXTS } = results.constants;
+        const decrease = cart.getDecreaseControl(quantity);
+
+        return `<div class="product-card__cart-stepper" role="group" aria-label="${utils.escapeHtml(TEXTS.inCart)}">
+            <button class="product-card__cart-step" type="button" data-cart-action="decrease" aria-label="${utils.escapeHtml(decrease.label)}">${decrease.icon}</button>
+            <span class="product-card__cart-quantity">${quantity}</span>
+            <button class="product-card__cart-step" type="button" data-cart-action="increase" aria-label="${utils.escapeHtml(cart.getText('increase'))}">${cart.getIcon('plus')}</button>
+        </div>`;
     },
 
     /**

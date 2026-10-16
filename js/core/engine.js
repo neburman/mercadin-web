@@ -13,6 +13,7 @@ const engine = {
         CACHE_TTL_MS: 10 * 60 * 1000,
         // Con mala cobertura, un comercio colgado no debe retener los resultados de los demás.
         STORE_TIMEOUT_MS: 10 * 1000,
+        NAME_COLLATOR: new Intl.Collator('es', { sensitivity: 'base' }),
     },
     globals: {
         stores: [],
@@ -95,12 +96,16 @@ const engine = {
     // === SETTERS ===
 
     /**
-     * Añade un adaptador de comercio al motor y lo inicia.
+     * Añade un adaptador de comercio al motor, en orden alfabético, y lo inicia.
      *
      * @param {Object} store Objeto que cumple el contrato de adaptador.
      */
     register(store) {
-        engine.globals.stores.push(store);
+        const self = engine;
+        const { constants, globals } = self;
+
+        globals.stores.push(store);
+        globals.stores.sort((storeA, storeB) => constants.NAME_COLLATOR.compare(self.getOrigin(storeA).storeName, self.getOrigin(storeB).storeName));
         store.init();
     },
 

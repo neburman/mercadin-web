@@ -12,7 +12,8 @@ Buscador que compara el precio de un producto en varios supermercados españoles
 - Calcula el precio por kilo, litro o unidad para poder comparar envases distintos.
 - Ordena por precio por kg/l (el orden inicial), relevancia, más barato, más caro, ofertas o A-Z.
 - Solo muestra productos cuyo nombre o marca contienen lo buscado, sin tener en cuenta tildes ni plurales.
-- Recuerda en el navegador el código postal, los comercios elegidos y la última ordenación.
+- Guarda productos en una lista de la compra separada por comercio, con cantidades, subtotales y casillas para marcar lo ya comprado y quitarlo.
+- Recuerda en el navegador el código postal, los comercios elegidos, la última ordenación y la lista de la compra.
 - Muestra los resultados según responde cada comercio, sin esperar al más lento; un comercio que tarda más de 10 s se da por caído.
 - Pinta los resultados por bloques al hacer scroll, para gastar menos datos.
 - Guarda cada búsqueda 10 minutos: repetirla o cambiar los comercios marcados no vuelve a pedir lo ya recibido.
@@ -58,6 +59,7 @@ img/                Logo y favicon
 | `store-filter.js` | Selección de comercios |
 | `dropdown.js` | Desplegables de comercios y ordenación: lista cerrada en móvil y tablet, chips abiertos en PC |
 | `postal-code.js` | Código postal |
+| `cart.js` | Lista de la compra: botón con contador en la cabecera y modal con los productos agrupados por comercio |
 
 Cada componente es un objeto literal global con `constants`, `globals`, `elements`, `init()` y `listeners()`. No se usan módulos ES para que la página funcione abierta desde `file://`.
 

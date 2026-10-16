@@ -1,3 +1,51 @@
+.store-filter__legend {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-2);
+    width: 100%;
+}
+
+.store-filter__toggle {
+    color: var(--color-primary);
+    font: inherit;
+}
+
+.store-filter__toggle:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-offset);
+}
+
+.store-filter__toggle--legend {
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.store-filter__toggle--legend:hover {
+    text-decoration: underline;
+}
+
+.store-filter__toggle--option {
+    font-weight: var(--font-weight-bold);
+}
+
+/* En móvil y tablet el conmutador es la primera opción del selector; en PC, un enlace junto al título. */
+@media (max-width: 1024px) {
+    .store-filter__toggle--legend {
+        display: none;
+    }
+}
+
+@media (min-width: 1025px) {
+    .store-filter__toggle--option {
+        display: none;
+    }
+}
+
 .store-filter__option {
     padding-left: var(--space-2);
 }

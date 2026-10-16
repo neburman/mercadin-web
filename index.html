@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="css/components/store-filter.css">
     <link rel="stylesheet" href="css/components/search.css">
     <link rel="stylesheet" href="css/components/sort.css">
+    <link rel="stylesheet" href="css/components/view.css">
     <link rel="stylesheet" href="css/components/results.css">
     <link rel="stylesheet" href="css/components/product-card.css">
     <link rel="stylesheet" href="css/components/theme-toggle.css">
@@ -45,6 +46,7 @@
     <script defer src="js/core/store-filter.js"></script>
     <script defer src="js/core/search.js"></script>
     <script defer src="js/core/sort.js"></script>
+    <script defer src="js/core/view.js"></script>
     <script defer src="js/core/results.js"></script>
     <script defer src="js/core/app.js"></script>
 </head>
@@ -99,13 +101,20 @@
             </form>
         </section>
 
-        <fieldset id="sort" class="sort" hidden>
-            <legend class="sort__label">Ordenar por</legend>
-            <details class="dropdown sort__dropdown">
-                <summary class="control dropdown__summary sort__summary"></summary>
-                <div class="chip-group dropdown__content dropdown__content--list sort__options"></div>
-            </details>
-        </fieldset>
+        <div class="toolbar">
+            <fieldset id="sort" class="sort" hidden>
+                <legend class="sort__label">Ordenar por</legend>
+                <details class="dropdown sort__dropdown">
+                    <summary class="control dropdown__summary sort__summary"></summary>
+                    <div class="chip-group dropdown__content dropdown__content--list sort__options"></div>
+                </details>
+            </fieldset>
+
+            <fieldset id="view" class="view" hidden>
+                <legend class="view__label">Vista</legend>
+                <div class="view__options"></div>
+            </fieldset>
+        </div>
 
         <section id="results" class="results" aria-live="polite" aria-busy="false"></section>
     </main>

@@ -9,15 +9,23 @@
 
 .results__grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(var(--card-min-width), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(var(--list-card-min-width), 100%), 1fr));
     gap: var(--space-4);
     padding: 0;
     list-style: none;
 }
 
+.results[data-view="mosaic"] .results__grid {
+    grid-template-columns: repeat(auto-fill, minmax(var(--tile-min-width), 1fr));
+}
+
 @media (max-width: 599px) {
     .results__grid {
         gap: var(--space-3);
+    }
+
+    .results[data-view="mosaic"] .results__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 

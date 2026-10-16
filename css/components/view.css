@@ -1,0 +1,67 @@
+.toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: var(--space-4);
+}
+
+/* Sin productos se ocultan la ordenación y la vista; la barra vacía no debe sumar hueco en .main. */
+.toolbar:not(:has(> :not([hidden]))) {
+    display: none;
+}
+
+.view__label {
+    font-weight: var(--font-weight-bold);
+}
+
+.view__options {
+    display: flex;
+}
+
+.view__option {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--touch-size);
+    height: var(--touch-size);
+    border: var(--border-width) solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: background-color var(--transition), color var(--transition);
+}
+
+.view__option:first-child {
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.view__option:last-child {
+    border-left: 0;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.view__option:hover {
+    color: var(--color-primary);
+}
+
+.view__option:has(:checked) {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+}
+
+.view__option:has(:focus-visible) {
+    z-index: 1;
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-offset);
+}
+
+.view__icon {
+    display: flex;
+}
+
+.view__icon svg {
+    width: var(--icon-size);
+    height: var(--icon-size);
+}

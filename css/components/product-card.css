@@ -1,8 +1,9 @@
+/* Vista de lista (por defecto): imagen a la izquierda y todos los datos. */
 .product-card {
     display: flex;
-    flex-direction: column;
+    align-items: flex-start;
     gap: var(--space-3);
-    padding: var(--space-4);
+    padding: var(--space-3);
     border: var(--border-width) solid var(--color-border);
     border-radius: var(--radius);
     background: var(--color-surface);
@@ -10,7 +11,9 @@
 }
 
 .product-card__media {
+    position: relative;
     display: flex;
+    flex: 0 0 var(--image-size);
     align-items: center;
     justify-content: center;
     height: var(--image-size);
@@ -25,10 +28,15 @@
     object-fit: contain;
 }
 
+.product-card__logo {
+    display: none;
+}
+
 .product-card__body {
     display: grid;
     gap: var(--space-1);
     flex: 1;
+    min-width: 0;
 }
 
 .product-card__store {
@@ -76,20 +84,69 @@
     font-size: var(--font-size-sm);
 }
 
-/* En móvil, imagen pequeña a la izquierda para que quepan varios productos por pantalla. */
 @media (max-width: 599px) {
-    .product-card {
-        flex-direction: row;
-        align-items: flex-start;
-        padding: var(--space-3);
-    }
-
     .product-card__media {
-        flex: 0 0 var(--image-size-compact);
+        flex-basis: var(--image-size-compact);
         height: var(--image-size-compact);
     }
+}
 
-    .product-card__body {
-        min-width: 0;
-    }
+/* Vista de mosaico: imagen grande arriba y solo nombre, precio y precio por unidad. */
+.results[data-view="mosaic"] .product-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+    padding: var(--space-2);
+}
+
+.results[data-view="mosaic"] .product-card__media {
+    flex: none;
+    height: auto;
+    aspect-ratio: 1;
+}
+
+.results[data-view="mosaic"] .product-card__logo {
+    position: absolute;
+    top: var(--space-1);
+    left: var(--space-1);
+    display: block;
+    width: var(--logo-size);
+    height: var(--logo-size);
+    padding: var(--space-1);
+    border-radius: var(--radius-pill);
+    background: var(--color-logo-bg);
+    box-shadow: var(--shadow);
+    object-fit: contain;
+    box-sizing: content-box;
+}
+
+.results[data-view="mosaic"] .product-card__name {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: var(--font-size-sm);
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.results[data-view="mosaic"] .product-card__brand,
+.results[data-view="mosaic"] .product-card__price-previous {
+    display: none;
+}
+
+/* Fuera de la vista, pero los lectores de pantalla siguen leyendo el comercio y el «sin stock». */
+.results[data-view="mosaic"] .product-card__store,
+.results[data-view="mosaic"] .product-card__badge {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.results[data-view="mosaic"] .product-card--unavailable {
+    opacity: var(--opacity-off);
 }

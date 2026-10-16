@@ -22,6 +22,7 @@ const results = {
         PLURAL_RULES: new Intl.PluralRules('es'),
         // Tamaño intrínseco de las miniaturas (cuadradas); reserva el hueco antes de que carguen.
         IMAGE_SIZE: 300,
+        LOGO_SIZE: 48,
         TEXTS: {
             outOfStock: 'Sin stock online',
             storeStatusLabel: 'Comercios cargando o sin respuesta',
@@ -179,6 +180,7 @@ const results = {
         const self = results;
 
         sort.toggle(false);
+        view.toggle(false);
         self.paint(self.getStateHTML(self.getState(stateKey)), stateKey === 'loading');
     },
 
@@ -210,6 +212,7 @@ const results = {
 
         self.setProducts(products);
         sort.toggle(products.length > 0);
+        view.toggle(products.length > 0);
         self.paint(`${self.getStoreStatusesHTML(storeResults, pendingIds)}${self.getProductsHTML(products, failedStores.length > 0, isPending)}`, isPending);
         self.appendPage();
 
@@ -287,6 +290,8 @@ const results = {
     },
 
     /**
+     * Pinta la tarjeta con todos los datos; la vista elegida decide con CSS cuáles se ven.
+     *
      * @param {Object} item Producto del modelo común.
      * @returns {string}
      */
@@ -294,8 +299,8 @@ const results = {
         const self = results;
         const { TEXTS } = self.constants;
 
-        return `<li class="product-card">
-            <div class="product-card__media">${self.getImageHTML(item)}</div>
+        return `<li class="product-card${item.available ? '' : ' product-card--unavailable'}">
+            <div class="product-card__media">${self.getImageHTML(item)}${self.getLogoHTML(engine.getLogoUrl(engine.getStoreById(item.storeId)))}</div>
             <div class="product-card__body">
                 <span class="product-card__store">${utils.escapeHtml(item.storeName)}</span>
                 <h3 class="product-card__name">${utils.escapeHtml(item.name)}</h3>
@@ -319,6 +324,22 @@ const results = {
         const { IMAGE_SIZE } = results.constants;
 
         return `<img class="product-card__image" src="${utils.escapeHtml(item.imageUrl)}" alt="" width="${IMAGE_SIZE}" height="${IMAGE_SIZE}" loading="lazy" decoding="async">`;
+    },
+
+    /**
+     * Pinta el logo del comercio; sin texto alternativo porque el nombre ya va en la tarjeta.
+     *
+     * @param {string} logoUrl
+     * @returns {string}
+     */
+    getLogoHTML(logoUrl) {
+        if (!logoUrl) {
+            return '';
+        }
+
+        const { LOGO_SIZE } = results.constants;
+
+        return `<img class="product-card__logo" src="${utils.escapeHtml(logoUrl)}" alt="" width="${LOGO_SIZE}" height="${LOGO_SIZE}" loading="lazy" decoding="async">`;
     },
 
     /**

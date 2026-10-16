@@ -47,28 +47,32 @@
     --header-logo-size: 2.75rem;
     --content-width: 72rem;
     --card-min-width: 15rem;
-    --postal-code-width: 8rem;
+    --postal-code-width: 6rem;
+    --postal-code-height: 2.5rem;
     --letter-spacing-wide: 0.1em;
     --image-size: 9rem;
     --image-size-compact: 5.5rem;
+    --theme-toggle-width: 4.5rem;
+    --theme-toggle-thumb: 1.75rem;
+    --theme-toggle-icon: 1.125rem;
 }
 
-@media (prefers-color-scheme: dark) {
-    :root {
-        --color-bg: #121412;
-        --color-surface: #1d201d;
-        --color-text: #f2f2ee;
-        --color-text-muted: #c9c9c4;
-        --color-border: #4a4d49;
-        --color-primary: #5fd39b;
-        --color-primary-hover: #86e2b5;
-        --color-on-primary: #08261a;
-        --color-sale: #ff8a80;
-        --color-error-bg: #3d1512;
-        --color-error-text: #ffb4ab;
-        --color-muted-bg: #2a2d2a;
-        --color-selected-bg: #173a29;
-        --color-focus: #8ab4ff;
-        --shadow: 0 1px 3px rgb(0 0 0 / 0.5);
-    }
+/* theme.js fija data-theme antes de pintar, con la elección guardada o la del sistema. */
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --color-bg: #121412;
+    --color-surface: #1d201d;
+    --color-text: #f2f2ee;
+    --color-text-muted: #c9c9c4;
+    --color-border: #4a4d49;
+    --color-primary: #5fd39b;
+    --color-primary-hover: #86e2b5;
+    --color-on-primary: #08261a;
+    --color-sale: #ff8a80;
+    --color-error-bg: #3d1512;
+    --color-error-text: #ffb4ab;
+    --color-muted-bg: #2a2d2a;
+    --color-selected-bg: #173a29;
+    --color-focus: #8ab4ff;
+    --shadow: 0 1px 3px rgb(0 0 0 / 0.5);
 }

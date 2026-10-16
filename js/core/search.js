@@ -39,11 +39,13 @@ const search = {
     // === ACTIONS ===
 
     /**
-     * Busca el término escrito; con el campo vacío vuelve al estado inicial.
+     * Cierra el teclado del móvil y busca el término escrito; con el campo vacío vuelve al estado inicial.
      */
     submit() {
         const self = search;
         const term = self.getTerm();
+
+        document.querySelector(self.elements.input).blur();
 
         if (!term) {
             self.reset();

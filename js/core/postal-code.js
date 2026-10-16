@@ -102,6 +102,8 @@ const postalCodeForm = {
 
         self.save(value);
         self.renderStatus('saved');
+        // Con los cinco dígitos no queda nada que escribir: se cierra el teclado del móvil.
+        document.querySelector(self.elements.input).blur();
     },
 
     /**

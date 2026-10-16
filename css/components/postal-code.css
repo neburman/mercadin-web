@@ -1,13 +1,23 @@
-.postal-code__row {
-    display: flex;
-    flex-wrap: wrap;
+.postal-code__form {
+    grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
-    gap: var(--space-2) var(--space-4);
+    column-gap: var(--space-3);
+}
+
+.postal-code__status,
+.postal-code__note {
+    grid-column: 1 / -1;
+}
+
+/* Vacío no ocupa fila, así no suma hueco vertical. */
+.postal-code__status:empty {
+    display: none;
 }
 
 .postal-code__input {
     width: var(--postal-code-width);
-    font-size: var(--font-size-lg);
+    min-height: var(--postal-code-height);
+    padding: var(--space-1) var(--space-3);
     letter-spacing: var(--letter-spacing-wide);
 }
 

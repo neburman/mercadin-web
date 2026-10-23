@@ -30,6 +30,7 @@
     <script defer src="js/core/engine.js"></script>
     <script defer src="js/core/algolia.js"></script>
     <script defer src="js/core/aktios.js"></script>
+    <script defer src="js/core/iskaypet.js"></script>
     <script defer src="js/stores/aldi.js"></script>
     <script defer src="js/stores/mercadona.js"></script>
     <script defer src="js/stores/lidl.js"></script>
@@ -44,6 +45,11 @@
     <script defer src="js/stores/action.js"></script>
     <script defer src="js/stores/amazon.js"></script>
     <script defer src="js/stores/lupa.js"></script>
+    <script defer src="js/stores/primor.js"></script>
+    <script defer src="js/stores/druni.js"></script>
+    <script defer src="js/stores/kiwoko.js"></script>
+    <script defer src="js/stores/tiendanimal.js"></script>
+    <script defer src="js/stores/zooplus.js"></script>
     <script defer src="js/core/dropdown.js"></script>
     <script defer src="js/core/postal-code.js"></script>
     <script defer src="js/core/store-filter.js"></script>
@@ -102,7 +108,9 @@
             </legend>
             <details class="dropdown store-filter__dropdown">
                 <summary class="control dropdown__summary store-filter__summary"></summary>
+                <input class="control store-filter__search" type="search" placeholder="Buscar comercio" aria-label="Buscar comercio" autocomplete="off" enterkeyhint="search">
                 <div class="chip-group dropdown__content dropdown__content--list store-filter__options"></div>
+                <p class="fine-print store-filter__empty" role="status" hidden>Ningún comercio coincide con la búsqueda.</p>
             </details>
         </fieldset>
 

@@ -24,7 +24,15 @@ const ALLOWED_HOSTS = [
     'www.lidl.es',
     'www.amazon.es',
     'www.lupaonline.com',
+    'eu1-search.doofinder.com',
+    'www.kiwoko.com',
+    'www.tiendanimal.es',
+    'www.zooplus.es',
 ];
+// Buscadores externos que solo responden a la web de su comercio (Doofinder de Druni): se les envía como origen esa web.
+const UPSTREAM_ORIGINS = {
+    'eu1-search.doofinder.com': 'https://www.druni.es',
+};
 const ALLOWED_ORIGINS = ['https://neburman.github.io', 'null', 'http://127.0.0.1:8080', 'http://localhost:8080'];
 const ALLOWED_METHODS = ['GET', 'POST'];
 // Cabeceras que delatan la web de origen o llevan datos de quien navega: no se reenvían al comercio.
@@ -77,7 +85,13 @@ export default {
             }
         }
 
-        headers.set('Referer', `${target.origin}/`);
+        const upstreamOrigin = UPSTREAM_ORIGINS[target.hostname];
+
+        if (upstreamOrigin) {
+            headers.set('Origin', upstreamOrigin);
+        }
+
+        headers.set('Referer', `${upstreamOrigin || target.origin}/`);
 
         let upstream;
 

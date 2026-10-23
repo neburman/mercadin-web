@@ -50,6 +50,23 @@
     padding-left: var(--space-2);
 }
 
+/* En móvil y tablet va dentro del desplegable, encima de la lista; en PC, encima de los chips. */
+.store-filter__search {
+    width: 100%;
+    margin-top: var(--space-3);
+}
+
+.store-filter__empty {
+    margin-top: var(--space-2);
+}
+
+@media (min-width: 1025px) {
+    .store-filter__search {
+        max-width: var(--store-search-width);
+        margin: 0 0 var(--space-3);
+    }
+}
+
 .store-filter__logo {
     width: var(--logo-size);
     height: var(--logo-size);

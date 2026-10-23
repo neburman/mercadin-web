@@ -3,7 +3,7 @@
  */
 const app = {
     constants: {
-        STORES: [storeAldi, storeMercadona, storeLidl, storeDia, storeCarrefour, storeConsum, storeAlcampo, storeBm, storeEroski, storeElCorteIngles, storeCostco, storeAction, storeAmazon, storeLupa],
+        STORES: [storeAldi, storeMercadona, storeLidl, storeDia, storeCarrefour, storeConsum, storeAlcampo, storeBm, storeEroski, storeElCorteIngles, storeCostco, storeAction, storeAmazon, storeLupa, storePrimor, storeDruni, storeKiwoko, storeTiendanimal, storeZooplus],
         COMPONENTS: [theme, sort, view, results, cart, postalCodeForm, storeFilter, search, dropdown],
     },
     globals: {},

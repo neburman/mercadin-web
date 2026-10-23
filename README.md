@@ -8,8 +8,9 @@ Buscador que compara el precio de un producto en varios supermercados españoles
 
 ## Qué hace
 
-- Busca un producto en 14 comercios a la vez: Aldi, Mercadona, Lidl, Dia, Carrefour, Consum, Alcampo, BM, Eroski, El Corte Inglés, Costco (vía Uber Eats), Action, Amazon (primero en Alimentación y bebidas; si ahí no hay nada, en todos los departamentos) y Lupa (con un código postal, solo si reparte en él).
+- Busca un producto en 19 comercios a la vez: Aldi, Mercadona, Lidl, Dia, Carrefour, Consum, Alcampo, BM, Eroski, El Corte Inglés, Costco (vía Uber Eats), Action, Amazon (primero en Alimentación y bebidas; si ahí no hay nada, en todos los departamentos), Lupa (con un código postal, solo si reparte en él), las perfumerías Primor y Druni y las tiendas de mascotas Kiwoko, Tiendanimal y Zooplus.
 - Con código postal, el selector de comercios oculta los que no dan servicio en esa zona.
+- El selector de comercios tiene un buscador por nombre, sin tener en cuenta tildes ni mayúsculas.
 - Calcula el precio por kilo, litro o unidad para poder comparar envases distintos.
 - Ordena por precio por kg/l (el orden inicial), relevancia, más barato, más caro, ofertas o A-Z.
 - Solo muestra productos cuyo nombre o marca contienen lo buscado, sin tener en cuenta tildes ni plurales.
@@ -53,7 +54,7 @@ img/                Logo y favicon
 | `engine.js` | Consulta en paralelo los comercios elegidos, descarta lo que no tiene relación con la búsqueda y normaliza los productos |
 | `product.js` | Modelo común de producto: validación y cálculo del precio por unidad |
 | `utils.js` | HTTP, proxy, almacenamiento, comparación de texto, formato, escape y eventos |
-| `algolia.js` / `aktios.js` | Lógica común de las plataformas que comparten varios comercios |
+| `algolia.js` / `aktios.js` / `iskaypet.js` | Lógica común de las plataformas que comparten varios comercios |
 | `search.js` | Formulario de búsqueda (solo busca al pulsar «Buscar») |
 | `results.js` | Estados, comercios que aún cargan o no responden y rejilla de productos con carga por scroll |
 | `sort.js` | Opciones de ordenación |
@@ -72,7 +73,9 @@ La mayoría de comercios no permiten peticiones desde otras webs (CORS). Esas pe
 - no reenvía cookies ni cabeceras de origen, y no sigue redirecciones;
 - devuelve las respuestas comprimidas.
 
-Aldi y Mercadona van directos, sin proxy: su buscador ya permite peticiones desde otras webs y responde comprimido. Lidl también las permite, pero va por el proxy porque responde sin comprimir.
+Druni busca en Doofinder, que solo responde a peticiones que vienen de druni.es: para ese dominio (`UPSTREAM_ORIGINS`), el Worker envía como origen la web de Druni.
+
+Aldi, Mercadona y Primor van directos, sin proxy: su buscador ya permite peticiones desde otras webs y responde comprimido. Lidl también las permite, pero va por el proxy porque responde sin comprimir.
 
 ## Añadir un comercio
 
@@ -95,6 +98,9 @@ Si una escala de unidad no se reconoce, el producto se descarta y se avisa en co
 - **Costco** muestra los precios de su tienda en Uber Eats, no los de la tienda física.
 - **Amazon** tampoco tiene API: se lee el HTML de su página de resultados (depende de sus atributos `data-cy` y clases `a-price`) y puede pedir captcha si detecta demasiadas peticiones desde el proxy.
 - **Lupa** solo reparte en parte del norte y su API no publica la zona: los códigos postales se leen en cada visita del desplegable «Zonas de reparto» del pie de lupaonline.com. Si cambian ese desplegable, con código postal Lupa deja de aparecer y se avisa en consola.
+- **Druni** usa el identificador público de su buscador Doofinder (`hashid`): si Druni lo cambia, hay que copiarlo de nuevo de su web.
+- **Kiwoko y Tiendanimal** no tienen API: se lee el HTML de su rejilla de resultados (depende de sus clases `isk-product-card`). En los productos con varios tamaños, el precio es el más bajo y el precio por kilo, el más bajo que muestra la tarjeta, que puede ser de otro tamaño.
+- **Zooplus** no tiene API: se piden los datos de su página de resultados de Next.js (cabecera `RSC`) y se lee el estado `initialStoreState`. Si cambian su web, puede cambiar ese formato.
 
 ## Licencia
 

@@ -1,6 +1,6 @@
 /**
- * Adaptador de Amazon: no tiene API de búsqueda pública, así que pide la página de resultados de Alimentación y bebidas
- * y la lee con DOMParser. Va por el proxy.
+ * Adaptador de Amazon: no tiene API de búsqueda pública, así que pide la página de resultados y la lee con DOMParser. Va por el proxy.
+ * Busca primero en Alimentación y bebidas y, si ahí no hay nada (pilas, celo…), en todos los departamentos.
  * El precio por unidad lo escribe cada vendedor: suele acertar en los packs que el título no deja leer («195 g, paquete de 4»),
  * pero a veces está mal («16.950 €/l» en una botella de 500 ml) o va por unidad en productos con peso.
  */
@@ -11,14 +11,16 @@ const storeAmazon = {
         LOGO_URL: 'https://www.amazon.es/favicon.ico',
         MODE: 'busqueda',
         ENDPOINT: 'https://www.amazon.es/s',
-        QUERY_PARAMS: {
-            i: 'grocery',
-        },
+        // Primero Alimentación y bebidas, para que «leche» no traiga leche limpiadora; si no da nada, todos los departamentos.
+        DEPARTMENTS: [
+            { i: 'grocery' },
+            {},
+        ],
         // Sin una cabecera de navegador, Amazon a veces devuelve la página sin productos.
         HEADERS: {
             'Accept': 'text/html',
         },
-        // Sin resultados en Alimentación, Amazon redirige a todos los departamentos: es una búsqueda vacía.
+        // Sin resultados en un departamento, Amazon redirige a todos: el proxy no sigue la redirección y se toma como búsqueda vacía.
         NO_RESULTS_STATUS: 302,
         // Sin la lista de resultados es un captcha o un desafío antibots (Akamai). Le toca a unas peticiones del proxy sí y a otras no,
         // así que se reintenta antes de dar el comercio por caído.
@@ -46,8 +48,8 @@ const storeAmazon = {
 
     // === GETTERS ===
 
-    getSearchUrl(term) {
-        return `${storeAmazon.constants.ENDPOINT}?${new URLSearchParams({ ...storeAmazon.constants.QUERY_PARAMS, k: term })}`;
+    getSearchUrl(term, department) {
+        return `${storeAmazon.constants.ENDPOINT}?${new URLSearchParams({ ...department, k: term })}`;
     },
 
     /**
@@ -163,16 +165,17 @@ const storeAmazon = {
     },
 
     /**
-     * Pide una vez la página de resultados.
+     * Pide una vez la página de resultados de un departamento.
      *
      * @param {string} term
+     * @param {Object} department Parámetros del departamento; vacío para todos.
      * @param {AbortSignal} signal
      * @returns {Promise<string|null>} HTML de la página; vacío si no hay resultados; null si Amazon ha bloqueado la petición.
      */
-    async requestPage(term, signal) {
+    async requestPage(term, department, signal) {
         const self = storeAmazon;
         const { constants } = self;
-        const response = await fetch(utils.getProxiedUrl(self.getSearchUrl(term)), { headers: constants.HEADERS, signal });
+        const response = await fetch(utils.getProxiedUrl(self.getSearchUrl(term, department)), { headers: constants.HEADERS, signal });
 
         if (response.status === constants.NO_RESULTS_STATUS) {
             return '';
@@ -188,17 +191,18 @@ const storeAmazon = {
     },
 
     /**
-     * Pide la primera página de resultados de Amazon en Alimentación y bebidas.
+     * Pide la primera página de resultados de un departamento, con reintentos si Amazon bloquea la petición.
      *
      * @param {string} term
+     * @param {Object} department
      * @param {AbortSignal} signal
      * @returns {Promise<string>} HTML de la página; vacío si no hay resultados.
      */
-    async search(term, signal) {
+    async searchDepartment(term, department, signal) {
         const self = storeAmazon;
 
         for (let attempt = 0; attempt < self.constants.MAX_ATTEMPTS; attempt++) {
-            const html = await self.requestPage(term, signal);
+            const html = await self.requestPage(term, department, signal);
 
             if (html !== null) {
                 return html;
@@ -206,6 +210,27 @@ const storeAmazon = {
         }
 
         throw new Error('Amazon bloquea el proxy');
+    },
+
+    /**
+     * Pide la primera página de resultados del primer departamento que tenga alguno.
+     *
+     * @param {string} term
+     * @param {AbortSignal} signal
+     * @returns {Promise<string>} HTML de la página; vacío si no hay resultados en ningún departamento.
+     */
+    async search(term, signal) {
+        const self = storeAmazon;
+
+        for (const department of self.constants.DEPARTMENTS) {
+            const html = await self.searchDepartment(term, department, signal);
+
+            if (html) {
+                return html;
+            }
+        }
+
+        return '';
     },
 
     /**

@@ -8,7 +8,7 @@ Buscador que compara el precio de un producto en varios supermercados españoles
 
 ## Qué hace
 
-- Busca un producto en 14 comercios a la vez: Aldi, Mercadona, Lidl, Dia, Carrefour, Consum, Alcampo, BM, Eroski, El Corte Inglés, Costco (vía Uber Eats), Action, Amazon (Alimentación y bebidas) y Lupa (con un código postal, solo si reparte en él).
+- Busca un producto en 14 comercios a la vez: Aldi, Mercadona, Lidl, Dia, Carrefour, Consum, Alcampo, BM, Eroski, El Corte Inglés, Costco (vía Uber Eats), Action, Amazon (primero en Alimentación y bebidas; si ahí no hay nada, en todos los departamentos) y Lupa (con un código postal, solo si reparte en él).
 - Con código postal, el selector de comercios oculta los que no dan servicio en esa zona.
 - Calcula el precio por kilo, litro o unidad para poder comparar envases distintos.
 - Ordena por precio por kg/l (el orden inicial), relevancia, más barato, más caro, ofertas o A-Z.

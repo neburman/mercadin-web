@@ -22,6 +22,7 @@ const ALLOWED_HOSTS = [
     'www.ubereats.com',
     'www.action.com',
     'www.lidl.es',
+    'www.amazon.es',
 ];
 const ALLOWED_ORIGINS = ['https://neburman.github.io', 'null', 'http://127.0.0.1:8080', 'http://localhost:8080'];
 const ALLOWED_METHODS = ['GET', 'POST'];

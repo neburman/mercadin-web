@@ -8,7 +8,7 @@ Buscador que compara el precio de un producto en varios supermercados españoles
 
 ## Qué hace
 
-- Busca un producto en 12 comercios a la vez: Aldi, Mercadona, Lidl, Dia, Carrefour, Consum, Alcampo, BM, Eroski, El Corte Inglés, Costco (vía Uber Eats) y Action.
+- Busca un producto en 13 comercios a la vez: Aldi, Mercadona, Lidl, Dia, Carrefour, Consum, Alcampo, BM, Eroski, El Corte Inglés, Costco (vía Uber Eats), Action y Amazon (Alimentación y bebidas).
 - Calcula el precio por kilo, litro o unidad para poder comparar envases distintos.
 - Ordena por precio por kg/l (el orden inicial), relevancia, más barato, más caro, ofertas o A-Z.
 - Solo muestra productos cuyo nombre o marca contienen lo buscado, sin tener en cuenta tildes ni plurales.
@@ -91,6 +91,7 @@ Si una escala de unidad no se reconoce, el producto se descarta y se avisa en co
 - **Action** recibe una consulta GraphQL propia escrita en `js/stores/action.js`: si Action cambia los nombres de sus campos, hay que ajustarla.
 - **Eroski** no tiene API JSON: se lee el HTML de su listado, así que depende de sus clases CSS.
 - **Costco** muestra los precios de su tienda en Uber Eats, no los de la tienda física.
+- **Amazon** tampoco tiene API: se lee el HTML de su página de resultados (depende de sus atributos `data-cy` y clases `a-price`) y puede pedir captcha si detecta demasiadas peticiones desde el proxy.
 
 ## Licencia
 

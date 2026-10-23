@@ -47,6 +47,20 @@ const engine = {
     },
 
     /**
+     * Devuelve los comercios que dan servicio en el código postal.
+     *
+     * @param {string} postalCode Vacío si el usuario no lo ha puesto.
+     * @returns {Array<Object>}
+     */
+    getAvailableStores(postalCode) {
+        return engine.getStores().filter((store) => store.isAvailable(postalCode));
+    },
+
+    getAvailableStoreIds(postalCode) {
+        return engine.getAvailableStores(postalCode).map((store) => engine.getOrigin(store).storeId);
+    },
+
+    /**
      * Combina la cancelación de la búsqueda con el tiempo máximo de espera de un comercio.
      *
      * @param {AbortSignal} signal
@@ -120,6 +134,23 @@ const engine = {
     },
 
     // === ACTIONS ===
+
+    /**
+     * Carga la zona de reparto de los comercios que la publican (los que tienen `loadCoverage()`); un fallo solo se avisa en consola.
+     *
+     * @returns {Promise<void>}
+     */
+    async loadCoverage() {
+        const self = engine;
+        const stores = self.getStores().filter((store) => store.loadCoverage);
+        const outcomes = await Promise.allSettled(stores.map((store) => store.loadCoverage()));
+
+        outcomes.forEach((outcome, index) => {
+            if (outcome.status === 'rejected') {
+                console.warn(`[${self.getOrigin(stores[index]).storeId}] No se ha podido cargar la zona de reparto.`, outcome.reason);
+            }
+        });
+    },
 
     /**
      * Cancela la búsqueda en curso, si la hay.

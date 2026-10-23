@@ -43,6 +43,7 @@
     <script defer src="js/stores/costco.js"></script>
     <script defer src="js/stores/action.js"></script>
     <script defer src="js/stores/amazon.js"></script>
+    <script defer src="js/stores/lupa.js"></script>
     <script defer src="js/core/dropdown.js"></script>
     <script defer src="js/core/postal-code.js"></script>
     <script defer src="js/core/store-filter.js"></script>
@@ -84,9 +85,13 @@
         <section id="postal-code" class="postal-code" aria-label="Código postal">
             <form class="field postal-code__form">
                 <label class="field-label" for="postal-code-input">Tu código postal:</label>
-                <input id="postal-code-input" class="control postal-code__input" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="5" placeholder="46001">
+                <span class="postal-code__control">
+                    <input id="postal-code-input" class="control postal-code__input" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="5" placeholder="46001">
+                    <svg class="postal-code__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>
+                </span>
                 <p class="postal-code__status" role="status"></p>
                 <p class="fine-print postal-code__note">* Algunos supermercados tienen precios distintos según la zona.</p>
+                <p class="fine-print postal-code__note">** Algunos supermercados estan disponibles en todos los códigos postables.</p>
             </form>
         </section>
 

@@ -107,7 +107,7 @@ const postalCodeForm = {
     },
 
     /**
-     * Guarda el código y repite la búsqueda en curso para la nueva zona.
+     * Guarda el código, muestra solo los comercios de la nueva zona y repite la búsqueda en curso.
      *
      * @param {string} value
      */
@@ -116,6 +116,7 @@ const postalCodeForm = {
 
         self.setValue(value);
         utils.writeStorage(self.constants.STORAGE_KEY, value);
+        storeFilter.refresh();
         search.refresh();
     },
 

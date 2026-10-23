@@ -1,12 +1,13 @@
+/* Etiqueta, campo y estado en la misma fila; si el estado no cabe (el error en móvil), baja entero a la siguiente. Las notas, debajo a todo el ancho. */
 .postal-code__form {
-    grid-template-columns: auto minmax(0, 1fr);
+    display: flex;
+    flex-wrap: wrap;
     align-items: center;
     column-gap: var(--space-3);
 }
 
-.postal-code__status,
 .postal-code__note {
-    grid-column: 1 / -1;
+    flex-basis: 100%;
 }
 
 /* Vacío no ocupa fila, así no suma hueco vertical. */
@@ -14,11 +15,34 @@
     display: none;
 }
 
+.postal-code__control {
+    position: relative;
+    display: inline-flex;
+}
+
+/* Reserva a la derecha el hueco del tick para que no tape el último dígito. */
 .postal-code__input {
-    width: var(--postal-code-width);
+    width: calc(var(--postal-code-width) + var(--icon-size));
     min-height: var(--postal-code-height);
-    padding: var(--space-1) var(--space-3);
+    padding: var(--space-1) calc(var(--space-3) + var(--icon-size)) var(--space-1) var(--space-3);
     letter-spacing: var(--letter-spacing-wide);
+}
+
+.postal-code__check {
+    position: absolute;
+    top: 50%;
+    right: var(--space-2);
+    width: var(--icon-size);
+    height: var(--icon-size);
+    color: var(--color-primary);
+    transform: translateY(-50%);
+    pointer-events: none;
+    visibility: hidden;
+}
+
+/* El tick sale mientras el estado sea «Guardado»; al editar el código, el estado se vacía y desaparece. */
+.postal-code__form:has(.postal-code__status--saved) .postal-code__check {
+    visibility: visible;
 }
 
 .postal-code__status {
@@ -27,6 +51,16 @@
 
 .postal-code__status--saved {
     color: var(--color-primary);
+}
+
+/* Se ve solo el tick: «Guardado» queda para el lector de pantalla. */
+.postal-code__status--saved {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
 }
 
 .postal-code__status--invalid {

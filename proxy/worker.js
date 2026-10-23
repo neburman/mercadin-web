@@ -23,6 +23,7 @@ const ALLOWED_HOSTS = [
     'www.action.com',
     'www.lidl.es',
     'www.amazon.es',
+    'www.lupaonline.com',
 ];
 const ALLOWED_ORIGINS = ['https://neburman.github.io', 'null', 'http://127.0.0.1:8080', 'http://localhost:8080'];
 const ALLOWED_METHODS = ['GET', 'POST'];

@@ -1,5 +1,6 @@
 /**
  * Selector de comercios en los que buscar; recuerda la selección entre visitas.
+ * Solo muestra los comercios que dan servicio en el código postal; la marca de los demás se conserva para cuando vuelvan a estar en zona.
  */
 const storeFilter = {
     constants: {
@@ -31,15 +32,13 @@ const storeFilter = {
     },
 
     /**
-     * Recupera la selección guardada, pinta las opciones, el resumen del desplegable y el botón de marcar o desmarcar todos, y registra los listeners.
+     * Recupera la selección guardada, pinta el selector y registra los listeners.
      */
     init() {
         const self = storeFilter;
 
         self.setSelectedIds(self.getStoredSelection());
-        self.renderOptions();
-        self.renderSummary();
-        self.renderToggle();
+        self.refresh();
         self.listeners();
     },
 
@@ -52,19 +51,36 @@ const storeFilter = {
         }, constants.workspace);
 
         utils.addListener('click', elements.toggle, () => {
-            self.applySelection(self.getSelectedIds().length ? [] : engine.getStoreIds());
+            self.applySelection(self.getSelectedIds().length ? [] : self.getZoneStoreIds());
             self.renderOptions();
         }, constants.workspace);
     },
 
     // === GETTERS ===
 
-    getSelectedIds() {
-        return storeFilter.globals.selectedIds;
+    getZoneStoreIds() {
+        return engine.getAvailableStoreIds(postalCodeForm.getValue());
+    },
+
+    isInZone(storeId) {
+        return storeFilter.getZoneStoreIds().includes(storeId);
     },
 
     isSelected(storeId) {
-        return storeFilter.getSelectedIds().includes(storeId);
+        return storeFilter.globals.selectedIds.includes(storeId);
+    },
+
+    /**
+     * Devuelve los comercios marcados que dan servicio en el código postal: son en los que se busca.
+     *
+     * @returns {Array<string>}
+     */
+    getSelectedIds() {
+        return storeFilter.getZoneStoreIds().filter((storeId) => storeFilter.isSelected(storeId));
+    },
+
+    getOutOfZoneSelectedIds() {
+        return storeFilter.globals.selectedIds.filter((storeId) => !storeFilter.isInZone(storeId));
     },
 
     /**
@@ -92,7 +108,7 @@ const storeFilter = {
             return SUMMARY_TEXTS.none;
         }
 
-        if (selectedIds.length === engine.getStoreIds().length) {
+        if (selectedIds.length === self.getZoneStoreIds().length) {
             return SUMMARY_TEXTS.all;
         }
 
@@ -140,12 +156,12 @@ const storeFilter = {
     /**
      * Cambia los comercios marcados, guarda la selección, actualiza el resumen y el botón, y repite la búsqueda.
      *
-     * @param {Array<string>} storeIds
+     * @param {Array<string>} storeIds Marcados entre los que están en zona; los de fuera conservan su marca.
      */
     applySelection(storeIds) {
         const self = storeFilter;
 
-        self.setSelectedIds(storeIds);
+        self.setSelectedIds([...self.getOutOfZoneSelectedIds(), ...storeIds]);
         self.saveSelection();
         self.renderSummary();
         self.renderToggle();
@@ -153,13 +169,24 @@ const storeFilter = {
     },
 
     /**
-     * Pinta el conmutador de marcar o desmarcar todos y una casilla por comercio registrado.
+     * Pinta de nuevo las opciones, el resumen y el botón de marcar o desmarcar todos; al cambiar el código postal cambian los comercios en zona.
+     */
+    refresh() {
+        const self = storeFilter;
+
+        self.renderOptions();
+        self.renderSummary();
+        self.renderToggle();
+    },
+
+    /**
+     * Pinta el conmutador de marcar o desmarcar todos y una casilla por comercio en zona.
      */
     renderOptions() {
         const self = storeFilter;
 
         document.querySelector(self.elements.options).innerHTML = self.getToggleOptionHTML()
-            + engine.getStores().map((store) => self.getOptionHTML(store)).join('');
+            + engine.getAvailableStores(postalCodeForm.getValue()).map((store) => self.getOptionHTML(store)).join('');
     },
 
     /**

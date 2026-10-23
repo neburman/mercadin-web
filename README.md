@@ -8,7 +8,8 @@ Buscador que compara el precio de un producto en varios supermercados españoles
 
 ## Qué hace
 
-- Busca un producto en 13 comercios a la vez: Aldi, Mercadona, Lidl, Dia, Carrefour, Consum, Alcampo, BM, Eroski, El Corte Inglés, Costco (vía Uber Eats), Action y Amazon (Alimentación y bebidas).
+- Busca un producto en 14 comercios a la vez: Aldi, Mercadona, Lidl, Dia, Carrefour, Consum, Alcampo, BM, Eroski, El Corte Inglés, Costco (vía Uber Eats), Action, Amazon (Alimentación y bebidas) y Lupa (con un código postal, solo si reparte en él).
+- Con código postal, el selector de comercios oculta los que no dan servicio en esa zona.
 - Calcula el precio por kilo, litro o unidad para poder comparar envases distintos.
 - Ordena por precio por kg/l (el orden inicial), relevancia, más barato, más caro, ofertas o A-Z.
 - Solo muestra productos cuyo nombre o marca contienen lo buscado, sin tener en cuenta tildes ni plurales.
@@ -78,6 +79,7 @@ Aldi y Mercadona van directos, sin proxy: su buscador ya permite peticiones desd
 1. Crear `js/stores/<comercio>.js` con el contrato de adaptador:
    - `constants`: `ID`, `NAME`, `LOGO_URL`, `MODE`, endpoint y parámetros;
    - `isAvailable(postalCode)`: si el comercio da servicio en ese código postal;
+   - `loadCoverage()` (opcional): carga al abrir la página la zona de reparto que luego consulta `isAvailable`;
    - `search(term, signal)`: lanza la petición y devuelve la respuesta cruda (con `utils.requestJson` si va directo, o `utils.requestProxiedJson` si va por el proxy);
    - `toProducts(raw)`: mapea la respuesta a los campos del modelo común (`id`, `name`, `brand`, `imageUrl`, `price`, `previousPrice`, `unitPrice`/`unitScale` o `packageText`, `available`, `categories`).
 2. Añadir su `<script defer>` en `index.html`, antes de los componentes de `js/core`.
@@ -92,6 +94,7 @@ Si una escala de unidad no se reconoce, el producto se descarta y se avisa en co
 - **Eroski** no tiene API JSON: se lee el HTML de su listado, así que depende de sus clases CSS.
 - **Costco** muestra los precios de su tienda en Uber Eats, no los de la tienda física.
 - **Amazon** tampoco tiene API: se lee el HTML de su página de resultados (depende de sus atributos `data-cy` y clases `a-price`) y puede pedir captcha si detecta demasiadas peticiones desde el proxy.
+- **Lupa** solo reparte en parte del norte y su API no publica la zona: los códigos postales se leen en cada visita del desplegable «Zonas de reparto» del pie de lupaonline.com. Si cambian ese desplegable, con código postal Lupa deja de aparecer y se avisa en consola.
 
 ## Licencia
 

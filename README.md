@@ -16,7 +16,8 @@ Buscador que compara el precio de un producto en varios supermercados españoles
 - Solo muestra productos cuyo nombre o marca contienen lo buscado, sin tener en cuenta tildes ni plurales.
 - Guarda productos en una lista de la compra separada por comercio, con cantidades, subtotales y casillas para marcar lo ya comprado y quitarlo.
 - Recuerda en el navegador el código postal, los comercios elegidos, la última ordenación y la lista de la compra.
-- Muestra los resultados según responde cada comercio, sin esperar al más lento; un comercio que tarda más de 10 s se da por caído.
+- Muestra los resultados según responde cada comercio, sin esperar al más lento; un intento que tarda más de 10 s se da por fallido.
+- Si un comercio falla (error, bloqueo antibots o más de 10 s sin respuesta), lo reintenta hasta 3 veces, cada una tras una cuenta atrás de 10 s que se ve en su etiqueta («no responde · reintentando en 10»).
 - Pinta los resultados por bloques al hacer scroll, para gastar menos datos.
 - Guarda cada búsqueda 10 minutos: repetirla o cambiar los comercios marcados no vuelve a pedir lo ya recibido.
 
@@ -71,7 +72,8 @@ La mayoría de comercios no permiten peticiones desde otras webs (CORS). Esas pe
 
 - solo reenvía a los dominios de su lista `ALLOWED_HOSTS` y solo acepta los orígenes de `ALLOWED_ORIGINS` (GitHub Pages, `file://` y localhost);
 - no reenvía cookies ni cabeceras de origen, y no sigue redirecciones;
-- devuelve las respuestas comprimidas.
+- devuelve las respuestas comprimidas;
+- guarda 30 minutos en la caché de Cloudflare, compartida por todos los visitantes, las respuestas que son resultados de verdad: JSON con estado 200, o HTML con la marca de resultados de su comercio (`CACHE_HTML_MARKERS`), para no guardar un captcha. Así una búsqueda repetida no vuelve a llegar al comercio y su antibots bloquea menos el proxy. La cabecera `X-Mercadin-Cache` dice si la respuesta sale de la caché (`HIT`) o del comercio (`MISS`).
 
 Druni busca en Doofinder, que solo responde a peticiones que vienen de druni.es: para ese dominio (`UPSTREAM_ORIGINS`), el Worker envía como origen la web de Druni.
 

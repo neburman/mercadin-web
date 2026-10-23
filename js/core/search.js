@@ -86,9 +86,16 @@ const search = {
 
         results.renderState('loading');
 
-        await engine.search(term, storeIds, postalCodeForm.getValue(), (storeResults, pendingIds) => {
+        const onProgress = (storeResults, pendingIds) => {
             results.render(storeResults, pendingIds, !isFirstUpdate);
             isFirstUpdate = false;
+        };
+
+        // La cuenta atrás solo cambia su etiqueta; se repinta todo si aún no hay etiquetas (ningún otro comercio ha respondido).
+        await engine.search(term, storeIds, postalCodeForm.getValue(), onProgress, (storeId, secondsLeft, storeResults, pendingIds) => {
+            if (!results.renderRetry(storeId, secondsLeft)) {
+                onProgress(storeResults, pendingIds);
+            }
         });
     },
 

@@ -13,6 +13,10 @@ const engine = {
         CACHE_TTL_MS: 10 * 60 * 1000,
         // Con mala cobertura, un comercio colgado no debe retener los resultados de los demás.
         STORE_TIMEOUT_MS: 10 * 1000,
+        // Un fallo suele ser un bloqueo antibots pasajero o un corte de red: se reintenta tras una cuenta atrás que se ve en pantalla.
+        MAX_RETRIES: 3,
+        RETRY_DELAY_SECONDS: 10,
+        ONE_SECOND_MS: 1000,
         NAME_COLLATOR: new Intl.Collator('es', { sensitivity: 'base' }),
     },
     globals: {
@@ -171,9 +175,10 @@ const engine = {
      * @param {Array<string>} storeIds
      * @param {string|null} postalCode
      * @param {Function} onProgress Recibe (storeResults, pendingIds): los resultados recibidos hasta ahora y los comercios que faltan.
+     * @param {Function} onRetry Recibe (storeId, secondsLeft, storeResults, pendingIds) cada segundo de la cuenta atrás de un reintento; 0 al reintentar.
      * @returns {Promise<Array<Object>|null>} Un resultado por comercio; null si otra búsqueda la ha sustituido.
      */
-    async search(term, storeIds, postalCode = null, onProgress = () => {}) {
+    async search(term, storeIds, postalCode = null, onProgress = () => {}, onRetry = () => {}) {
         const self = engine;
         const stores = self.getStoresByIds(storeIds);
         const storeResults = new Array(stores.length).fill(null);
@@ -183,7 +188,10 @@ const engine = {
         self.globals.controller = controller;
 
         await Promise.all(stores.map(async (store, index) => {
-            const outcome = await self.settle(self.searchStore(store, term, postalCode, controller.signal));
+            const onStoreRetry = (secondsLeft) => {
+                onRetry(self.getOrigin(store).storeId, secondsLeft, storeResults.filter(Boolean), self.getPendingIds(stores, storeResults));
+            };
+            const outcome = await self.settle(self.searchStore(store, term, postalCode, controller.signal, onStoreRetry));
 
             if (controller.signal.aborted) {
                 return;
@@ -223,9 +231,10 @@ const engine = {
      * @param {string} term
      * @param {string|null} postalCode
      * @param {AbortSignal} signal
+     * @param {Function} onRetry Recibe los segundos que faltan para reintentar.
      * @returns {Promise<{status: string, items: Array<Object>}>}
      */
-    async searchStore(store, term, postalCode, signal) {
+    async searchStore(store, term, postalCode, signal, onRetry) {
         const self = engine;
         const { STATUS } = self.constants;
 
@@ -240,10 +249,79 @@ const engine = {
             return { status: STATUS.ok, items: cachedItems };
         }
 
-        const items = store.toProducts(await store.search(term, self.getStoreSignal(signal)));
+        const items = await self.fetchItems(store, term, signal, onRetry);
         self.setCachedItems(cacheKey, items);
 
         return { status: STATUS.ok, items };
+    },
+
+    /**
+     * Pide y mapea los productos de un comercio; si falla, reintenta hasta MAX_RETRIES veces, cada una tras la cuenta atrás.
+     * Cada intento tiene su propio tiempo máximo de espera.
+     *
+     * @param {Object} store
+     * @param {string} term
+     * @param {AbortSignal} signal Cancelada si otra búsqueda sustituye a esta: entonces no se reintenta.
+     * @param {Function} onRetry
+     * @returns {Promise<Array<Object>>} Campos mapeados sin validar.
+     */
+    async fetchItems(store, term, signal, onRetry) {
+        const self = engine;
+
+        for (let retry = 0; ; retry++) {
+            try {
+                return store.toProducts(await store.search(term, self.getStoreSignal(signal)));
+            } catch (error) {
+                if (retry >= self.constants.MAX_RETRIES) {
+                    throw error;
+                }
+
+                await self.waitForRetry(signal, onRetry);
+
+                if (signal.aborted) {
+                    throw error;
+                }
+            }
+        }
+    },
+
+    /**
+     * Cuenta atrás de un reintento: avisa cada segundo de los que faltan y con 0 al terminar.
+     *
+     * @param {AbortSignal} signal Corta la espera si otra búsqueda sustituye a esta.
+     * @param {Function} onRetry
+     * @returns {Promise<void>}
+     */
+    async waitForRetry(signal, onRetry) {
+        const self = engine;
+        const { RETRY_DELAY_SECONDS, ONE_SECOND_MS } = self.constants;
+
+        for (let secondsLeft = RETRY_DELAY_SECONDS; secondsLeft > 0 && !signal.aborted; secondsLeft--) {
+            onRetry(secondsLeft);
+            await self.sleep(ONE_SECOND_MS, signal);
+        }
+
+        if (!signal.aborted) {
+            onRetry(0);
+        }
+    },
+
+    /**
+     * Espera el tiempo indicado o hasta que se cancele la búsqueda.
+     *
+     * @param {number} ms
+     * @param {AbortSignal} signal
+     * @returns {Promise<void>}
+     */
+    sleep(ms, signal) {
+        return new Promise((resolve) => {
+            const timer = setTimeout(resolve, ms);
+
+            signal.addEventListener('abort', () => {
+                clearTimeout(timer);
+                resolve();
+            }, { once: true });
+        });
     },
 
     /**

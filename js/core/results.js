@@ -18,6 +18,11 @@ const results = {
         },
         STORE_STATE_DEFAULT: { modifier: '', detail: '' },
         PENDING_STATE: 'pending',
+        // Durante la cuenta atrás se ve como un fallo; al llegar a 0, como un comercio que vuelve a cargar.
+        RETRY_STATES: {
+            countdown: { modifier: 'error', detail: (secondsLeft) => `no responde · reintentando en ${secondsLeft}` },
+            now: { modifier: 'pending', detail: () => 'reintentando…' },
+        },
         COUNT_LABELS: { one: 'producto', other: 'productos' },
         PLURAL_RULES: new Intl.PluralRules('es'),
         // Tamaño intrínseco de las miniaturas (cuadradas); reserva el hueco antes de que carguen.
@@ -40,6 +45,8 @@ const results = {
     globals: {
         storeResults: [],
         pendingIds: [],
+        // Segundos que faltan para reintentar cada comercio pendiente que ha fallado: { storeId: secondsLeft }.
+        retries: {},
         products: [],
         shownCount: 0,
         observer: null,
@@ -48,6 +55,7 @@ const results = {
         container: '#results',
         grid: '#results .results__grid',
         sentinel: '#results .results__sentinel',
+        getStoreStatus: (storeId) => `#results .store-status[data-store-id="${storeId}"]`,
         cartControl: '#results .product-card__cart',
         cartAction: '#results .product-card__cart [data-cart-action]',
         getCartAction: (action) => `[data-cart-action="${action}"]`,
@@ -85,6 +93,32 @@ const results = {
 
     getStoreState(stateKey) {
         return results.constants.STORE_STATES[stateKey] || results.constants.STORE_STATE_DEFAULT;
+    },
+
+    getRetrySeconds(storeId) {
+        return results.globals.retries[storeId] ?? null;
+    },
+
+    /**
+     * Devuelve cómo se ve la etiqueta de un comercio: su estado si ha respondido; si no, la cuenta atrás del reintento o «cargando…».
+     *
+     * @param {Array<Object>} storeResults
+     * @param {string} storeId
+     * @returns {{modifier: string, detail: string}}
+     */
+    getStoreStatusState(storeResults, storeId) {
+        const self = results;
+        const { PENDING_STATE, RETRY_STATES } = self.constants;
+        const storeResult = self.getStoreResult(storeResults, storeId);
+        const secondsLeft = self.getRetrySeconds(storeId);
+
+        if (storeResult || secondsLeft === null) {
+            return self.getStoreState(storeResult ? storeResult.status : PENDING_STATE);
+        }
+
+        const retryState = secondsLeft > 0 ? RETRY_STATES.countdown : RETRY_STATES.now;
+
+        return { modifier: retryState.modifier, detail: retryState.detail(secondsLeft) };
     },
 
     getStoreResult(storeResults, storeId) {
@@ -137,6 +171,21 @@ const results = {
 
         globals.storeResults = storeResults;
         globals.pendingIds = pendingIds;
+        storeResults.forEach(({ storeId }) => delete globals.retries[storeId]);
+    },
+
+    /**
+     * Guarda los segundos que faltan para reintentar un comercio.
+     *
+     * @param {string} storeId
+     * @param {number} secondsLeft 0 mientras se reintenta.
+     */
+    setRetry(storeId, secondsLeft) {
+        results.globals.retries[storeId] = secondsLeft;
+    },
+
+    clearRetries() {
+        results.globals.retries = {};
     },
 
     /**
@@ -244,6 +293,7 @@ const results = {
     renderState(stateKey) {
         const self = results;
 
+        self.clearRetries();
         sort.toggle(false);
         view.toggle(false);
         self.paint(self.getStateHTML(self.getState(stateKey)), stateKey === 'loading');
@@ -261,6 +311,28 @@ const results = {
 
         self.setStoreResults(storeResults, pendingIds);
         self.repaint(keepShown ? self.globals.shownCount : 0);
+    },
+
+    /**
+     * Pinta la cuenta atrás del reintento de un comercio en su etiqueta, sin repintar los productos.
+     *
+     * @param {string} storeId
+     * @param {number} secondsLeft
+     * @returns {boolean} false si la etiqueta aún no está pintada: entonces hay que repintar los resultados.
+     */
+    renderRetry(storeId, secondsLeft) {
+        const self = results;
+        const status = document.querySelector(self.elements.getStoreStatus(storeId));
+
+        self.setRetry(storeId, secondsLeft);
+
+        if (!status) {
+            return false;
+        }
+
+        status.outerHTML = self.getStoreStatusHTML(storeId, self.getStoreStatusState(self.globals.storeResults, storeId));
+
+        return true;
     },
 
     /**
@@ -308,11 +380,10 @@ const results = {
      */
     getStoreStatusesHTML(storeResults, pendingIds) {
         const self = results;
-        const { PENDING_STATE, TEXTS } = self.constants;
+        const { TEXTS } = self.constants;
         const items = self.getSearchedStoreIds(storeResults, pendingIds)
-            .map((storeId) => ({ storeId, stateKey: (self.getStoreResult(storeResults, storeId) || { status: PENDING_STATE }).status }))
-            .filter(({ stateKey }) => stateKey !== engine.constants.STATUS.ok)
-            .map(({ storeId, stateKey }) => self.getStoreStatusHTML(storeId, stateKey))
+            .filter((storeId) => (self.getStoreResult(storeResults, storeId) || {}).status !== engine.constants.STATUS.ok)
+            .map((storeId) => self.getStoreStatusHTML(storeId, self.getStoreStatusState(storeResults, storeId)))
             .join('');
 
         return items ? `<ul class="store-status-list" aria-label="${utils.escapeHtml(TEXTS.storeStatusLabel)}">${items}</ul>` : '';
@@ -320,14 +391,14 @@ const results = {
 
     /**
      * @param {string} storeId
-     * @param {string} stateKey Clave de STORE_STATES.
+     * @param {{modifier: string, detail: string}} state
      * @returns {string}
      */
-    getStoreStatusHTML(storeId, stateKey) {
-        const { modifier, detail } = results.getStoreState(stateKey);
+    getStoreStatusHTML(storeId, state) {
+        const { modifier, detail } = state;
         const { storeName } = engine.getOrigin(engine.getStoreById(storeId));
 
-        return `<li class="store-status store-status--${modifier}">
+        return `<li class="store-status store-status--${modifier}" data-store-id="${utils.escapeHtml(storeId)}">
             <span class="store-status__name">${utils.escapeHtml(storeName)}</span>
             <span class="store-status__detail">${utils.escapeHtml(detail)}</span>
         </li>`;

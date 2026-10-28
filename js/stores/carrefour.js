@@ -92,6 +92,7 @@ const storeCarrefour = {
             packageText: doc.display_name,
             available: doc.stock > 0,
             categories: [],
+            ean: doc.ean13,
         };
     },
 };

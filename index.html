@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="css/components/product-card.css">
     <link rel="stylesheet" href="css/components/theme-toggle.css">
     <link rel="stylesheet" href="css/components/cart.css">
+    <link rel="stylesheet" href="css/components/product-detail.css">
 
     <!-- Sin defer: el tema tiene que aplicarse antes de pintar la página. -->
     <script src="js/core/utils.js"></script>
@@ -30,6 +31,7 @@
     <script defer src="js/core/engine.js"></script>
     <script defer src="js/core/algolia.js"></script>
     <script defer src="js/core/aktios.js"></script>
+    <script defer src="js/core/open-food-facts.js"></script>
     <script defer src="js/core/iskaypet.js"></script>
     <script defer src="js/stores/aldi.js"></script>
     <script defer src="js/stores/mercadona.js"></script>
@@ -57,6 +59,7 @@
     <script defer src="js/core/sort.js"></script>
     <script defer src="js/core/view.js"></script>
     <script defer src="js/core/cart.js"></script>
+    <script defer src="js/core/product-detail.js"></script>
     <script defer src="js/core/results.js"></script>
     <script defer src="js/core/app.js"></script>
 </head>
@@ -158,6 +161,19 @@
                     <button class="button cart__remove-bought" type="button">Quitar marcados</button>
                 </div>
             </div>
+        </div>
+    </dialog>
+
+    <!-- El contenido lo pinta product-detail.js al pulsar una tarjeta. -->
+    <dialog id="product-detail" class="product-detail" aria-labelledby="product-detail-title">
+        <div class="product-detail__panel">
+            <div class="product-detail__header">
+                <h2 id="product-detail-title" class="product-detail__title"></h2>
+                <button class="product-detail__close" type="button" aria-label="Cerrar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+            </div>
+            <div class="product-detail__content" aria-live="polite"></div>
         </div>
     </dialog>
 </body>

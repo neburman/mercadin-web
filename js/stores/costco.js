@@ -16,6 +16,17 @@ const storeCostco = {
             'x-csrf-token': 'x',
         },
         CENTS: 100,
+        // Ficha del producto: código de barras e ingredientes; sin localeCode los textos llegan en inglés.
+        DETAIL_ENDPOINT: 'https://www.ubereats.com/_p/api/getMenuItemV1',
+        DETAIL_PARAMS: { localeCode: 'es' },
+        GTIN_TYPE: 'GTIN',
+        METADATA_TYPE: 'STANDARD_METADATA',
+        INGREDIENTS_TYPE: 'ingredients_metadata',
+        // «Ingredientes: …\n\n\nContiene: …»: lista de ingredientes y, al final, los alérgenos.
+        INGREDIENTS_PREFIX_PATTERN: /^\s*(ingredientes|ingredients)\s*:\s*/i,
+        ALLERGENS_SEPARATOR_PATTERN: /\n+\s*(?:contiene|contains)\s*:\s*/i,
+        // El GTIN llega con 14 dígitos: el 0 inicial sobra para el EAN-13.
+        GTIN_PADDING_PATTERN: /^0(?=\d{13}$)/,
     },
     globals: {},
     elements: {},
@@ -50,6 +61,36 @@ const storeCostco = {
      */
     toEuros(cents) {
         return Number.isFinite(cents) ? Math.round(cents) / storeCostco.constants.CENTS : null;
+    },
+
+    /**
+     * Devuelve el EAN-13 del producto a partir de su GTIN-14.
+     *
+     * @param {Object} data Ficha del producto.
+     * @returns {string}
+     */
+    getEan(data) {
+        const { GTIN_TYPE, GTIN_PADDING_PATTERN } = storeCostco.constants;
+        const gtin = ((data.productIdentifiers || []).find((identifier) => identifier.type === GTIN_TYPE) || {}).value || '';
+
+        return gtin.replace(GTIN_PADDING_PATTERN, '');
+    },
+
+    /**
+     * Devuelve el texto del bloque de ingredientes de la ficha, que acaba con los alérgenos.
+     *
+     * @param {Object} data
+     * @returns {string}
+     */
+    getIngredientsText(data) {
+        const { METADATA_TYPE, INGREDIENTS_TYPE } = storeCostco.constants;
+        const metadata = (data.productDetailsItems || [])
+            .filter((detail) => detail.type === METADATA_TYPE)
+            .map((detail) => ((detail.payload || {}).standardMetadataPayload || {}).metadata || {})
+            .find((entry) => entry.type === INGREDIENTS_TYPE);
+        const element = ((((metadata || {}).content || {}).richTextElements) || [])[0] || {};
+
+        return ((element.text || {}).text || {}).text || '';
     },
 
     // === CONTRACT ===
@@ -88,6 +129,24 @@ const storeCostco = {
     },
 
     /**
+     * Pide la ficha del producto en Uber Eats: código de barras, ingredientes y alérgenos.
+     *
+     * @param {Object} item Producto del modelo común; detailRef lleva la sección y subsección del catálogo.
+     * @param {AbortSignal} signal
+     * @returns {Promise<{ean: string, ingredients: string, allergens: string}>}
+     */
+    async getDetail(item, signal) {
+        const self = storeCostco;
+        const { constants } = self;
+        const body = JSON.stringify({ itemRequestType: 'ITEM', storeUuid: constants.STORE_UUID, ...item.detailRef, menuItemUuid: item.id });
+        const raw = await utils.requestProxiedJson(constants.DETAIL_ENDPOINT, constants.DETAIL_PARAMS, { method: 'POST', headers: constants.HEADERS, body, signal });
+        const data = raw.data || {};
+        const [ingredients, allergens = ''] = self.getIngredientsText(data).replace(constants.INGREDIENTS_PREFIX_PATTERN, '').split(constants.ALLERGENS_SEPARATOR_PATTERN);
+
+        return { ean: self.getEan(data), ingredients: ingredients.trim(), allergens: allergens.trim() };
+    },
+
+    /**
      * Mapea un producto; no trae precio de referencia, así que el modelo lo calcula con el título («… (1 L)»).
      *
      * @param {Object} item
@@ -106,6 +165,7 @@ const storeCostco = {
             packageText: item.title,
             available: item.isAvailable !== false && !item.isSoldOut,
             categories: [],
+            detailRef: { sectionUuid: item.sectionUuid, subsectionUuid: item.subsectionUuid },
         };
     },
 };

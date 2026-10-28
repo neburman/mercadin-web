@@ -53,6 +53,8 @@ const product = {
         THOUSANDS_SCALES: ['ml', 'cl', 'g', 'gr', 'gramos'],
         // Precio por unidad ya formateado: «0,83 €/l», «1,49 €/ud.».
         UNIT_PRICE_TEXT_PATTERN: /(\d+(?:[.,]\d+)?)\s*€\s*\/\s*([a-z\d\s-]+)/,
+        // Valores que la etiqueta nutricional desglosa dentro de otro: «de las cuales saturadas», «Ácidos grasos saturados», «Grasas saturadas», «Azúcares».
+        SUB_NUTRIENT_PATTERN: /^(de\s+l[ao]s\b|ácidos\s+grasos|grasas\s+(mono|poli)?(saturadas|insaturadas)|(mono|poli)insaturadas|azúcares)/i,
     },
     globals: {},
     elements: {},
@@ -176,13 +178,28 @@ const product = {
         return previousPrice ? (previousPrice - price) / previousPrice : 0;
     },
 
+    /**
+     * Crea una fila de la tabla nutricional de la ficha.
+     *
+     * @param {string} label
+     * @param {string} text Valor ya formateado con su unidad.
+     * @param {boolean|null} isSub Si va desglosada dentro de la anterior; null para deducirlo del nombre.
+     * @returns {{label: string, text: string, isSub: boolean}}
+     */
+    createNutrient(label, text, isSub = null) {
+        const name = String(label ?? '').trim();
+
+        return { label: name, text: String(text ?? '').trim(), isSub: isSub ?? product.constants.SUB_NUTRIENT_PATTERN.test(name) };
+    },
+
     // === ACTIONS ===
 
     /**
      * Crea el producto común a partir de los campos que mapea un adaptador.
      *
-     * @param {Object} fields { id, name, brand, imageUrl, price, previousPrice, unitPrice, unitScale, packageText, available, categories }
-     *                        unitPrice y unitScale son opcionales; sin ellos se calcula con packageText.
+     * @param {Object} fields { id, name, brand, imageUrl, price, previousPrice, unitPrice, unitScale, packageText, available, categories, ean, detailRef }
+     *                        unitPrice y unitScale son opcionales; sin ellos se calcula con packageText. ean, solo si el buscador lo trae.
+     *                        detailRef, lo que necesite el adaptador para pedir la ficha (URL, identificadores…), sin formato común.
      * @param {{storeId: string, storeName: string}} origin
      * @returns {Object|null} null si no supera la validación.
      */
@@ -215,6 +232,8 @@ const product = {
             unit: scale.unit,
             available: Boolean(fields.available),
             categories: fields.categories || [],
+            ean: fields.ean ? String(fields.ean) : '',
+            detailRef: fields.detailRef ?? null,
         };
     },
 };

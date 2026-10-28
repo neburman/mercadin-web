@@ -4,6 +4,7 @@
 const utils = {
     constants: {
         CURRENCY: new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }),
+        AMOUNT: new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 }),
         LIST_FORMAT: new Intl.ListFormat('es', { type: 'conjunction' }),
         HTML_ENTITIES: { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' },
         // Worker de Cloudflare para los comercios sin CORS; cada dominio debe estar en su lista ALLOWED_HOSTS.
@@ -44,6 +45,23 @@ const utils = {
     },
 
     /**
+     * Hace la petición y devuelve el cuerpo como texto; falla si el estado HTTP no es 2xx.
+     *
+     * @param {string} url
+     * @param {RequestInit} options
+     * @returns {Promise<string>}
+     */
+    async requestText(url, options = {}) {
+        const response = await fetch(url, options);
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        return response.text();
+    },
+
+    /**
      * Devuelve la URL que pasa por el proxy, para comercios que no permiten peticiones desde otras webs.
      *
      * @param {string} url
@@ -65,6 +83,17 @@ const utils = {
         const query = new URLSearchParams(params).toString();
 
         return utils.requestJson(utils.getProxiedUrl(query ? `${endpoint}?${query}` : endpoint), options);
+    },
+
+    /**
+     * Pide una página HTML de un comercio a través del proxy.
+     *
+     * @param {string} url
+     * @param {RequestInit} options
+     * @returns {Promise<string>}
+     */
+    requestProxiedText(url, options = {}) {
+        return utils.requestText(utils.getProxiedUrl(url), options);
     },
 
     // === STORAGE ===
@@ -202,6 +231,17 @@ const utils = {
      */
     formatUnitPrice(amount, unit) {
         return `${utils.formatPrice(amount)}/${unit}`;
+    },
+
+    /**
+     * Formatea una cantidad con su unidad.
+     *
+     * @param {number} amount
+     * @param {string} unit
+     * @returns {string} Por ejemplo, «1,55 g».
+     */
+    formatAmount(amount, unit) {
+        return `${utils.constants.AMOUNT.format(amount)} ${unit}`.trim();
     },
 
     /**

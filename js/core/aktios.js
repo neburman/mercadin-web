@@ -77,6 +77,7 @@ const aktios = {
             packageText: data.description || data.name,
             available: data.availability === AVAILABLE,
             categories: self.getCategories(item),
+            ean: item.ean,
         };
     },
 };

@@ -59,6 +59,20 @@ const storeElCorteIngles = {
         return (item.sale_type || {}).identifier === storeElCorteIngles.constants.WEIGHT_SALE_TYPE;
     },
 
+    /**
+     * Pasa los valores nutricionales de la ficha, con sus desgloses, a filas de la tabla.
+     *
+     * @param {Array<Object>} nutrients { name, value, unit: { name, symbol }, childrens }
+     * @param {boolean} isSub
+     * @returns {Array<{label: string, text: string, isSub: boolean}>}
+     */
+    getNutrition(nutrients, isSub = false) {
+        return (nutrients || []).flatMap((nutrient) => [
+            product.createNutrient(nutrient.name, utils.formatAmount(nutrient.value, (nutrient.unit || {}).name || (nutrient.unit || {}).symbol || ''), isSub),
+            ...storeElCorteIngles.getNutrition(nutrient.childrens, true),
+        ]);
+    },
+
     // === CONTRACT ===
 
     /**
@@ -93,6 +107,34 @@ const storeElCorteIngles = {
     },
 
     /**
+     * Pide la ficha del producto, que con la cabecera de JSON llega como datos: EAN y, si los tiene, ingredientes, alérgenos y nutrición.
+     *
+     * @param {Object} item Producto del modelo común; detailRef es la ruta de su ficha.
+     * @param {AbortSignal} signal
+     * @returns {Promise<Object>} { ean, ingredients, allergens, nutrition }; vacío si no se conoce la ruta.
+     */
+    async getDetail(item, signal) {
+        const self = storeElCorteIngles;
+        const { constants } = self;
+
+        if (!item.detailRef) {
+            return {};
+        }
+
+        const raw = await utils.requestProxiedJson(`${constants.BASE_URL}${item.detailRef}`, {}, { signal, headers: constants.HEADERS });
+        const data = (raw.pdp || {}).product || {};
+        const food = data.information_alimentary || {};
+        const ingredientsAllergens = food.ingredientsAllergens || {};
+
+        return {
+            ean: data.ean || '',
+            ingredients: (ingredientsAllergens.ingredients || []).filter(Boolean).join(' '),
+            allergens: (ingredientsAllergens.allergens || []).filter(Boolean).join(', '),
+            nutrition: self.getNutrition(((food.nutrients || [])[0] || {}).nutrients),
+        };
+    },
+
+    /**
      * Mapea un producto; los importes llegan como texto con coma y `salePrice` es el precio vigente.
      *
      * @param {Object} item
@@ -115,6 +157,7 @@ const storeElCorteIngles = {
             packageText: item.presentation_detail_quantity || item.description,
             available: true,
             categories: self.getCategories(item),
+            detailRef: item.url,
         };
     },
 };

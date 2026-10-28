@@ -16,6 +16,11 @@ const storeBm = {
             orderById: 7,
             showRecommendations: false,
         },
+        // Ficha nutricional por EAN en su CDN; solo existe si el producto trae el atributo NUTRITIONAL_INFO_CODE (si no, da 404).
+        // Solo admite CORS desde la web de BM, así que va por el proxy.
+        DETAIL_ENDPOINT: 'https://cdn-bm.aktiosdigitalservices.com/tol/bm/media/product/nutritional-info/',
+        NUTRITIONAL_INFO_CODE: 'nutritional.info.date',
+        UNIT_SYMBOLS: { kj: 'kJ' },
     },
     globals: {},
     elements: {},
@@ -26,6 +31,26 @@ const storeBm = {
 
     getProductsData(raw) {
         return raw.products || [];
+    },
+
+    hasNutritionalInfo(item) {
+        return (aktios.getProductData(item).attributes || []).some((attribute) => attribute.code === storeBm.constants.NUTRITIONAL_INFO_CODE);
+    },
+
+    /**
+     * Pasa los valores de la ficha nutricional, con sus desgloses, a filas de la tabla.
+     *
+     * @param {Array<Object>} values { name, value, measurementUnit, children }
+     * @param {boolean} isSub
+     * @returns {Array<{label: string, text: string, isSub: boolean}>}
+     */
+    getNutrition(values, isSub = false) {
+        const self = storeBm;
+
+        return (values || []).flatMap((value) => [
+            product.createNutrient(value.name, utils.formatAmount(value.value, self.constants.UNIT_SYMBOLS[value.measurementUnit] || value.measurementUnit), isSub),
+            ...self.getNutrition(value.children, true),
+        ]);
     },
 
     // === CONTRACT ===
@@ -58,6 +83,33 @@ const storeBm = {
      * @returns {Array<Object>}
      */
     toProducts(raw) {
-        return storeBm.getProductsData(raw).map((item) => aktios.mapItem(item));
+        const self = storeBm;
+
+        return self.getProductsData(raw).map((item) => ({ ...aktios.mapItem(item), detailRef: self.hasNutritionalInfo(item) }));
+    },
+
+    /**
+     * Pide la ficha nutricional del producto, si la tiene: ingredientes, alérgenos y valores por 100 g.
+     *
+     * @param {Object} item Producto del modelo común; detailRef dice si tiene ficha.
+     * @param {AbortSignal} signal
+     * @returns {Promise<Object>} { ingredients, allergens, nutrition }; vacío si no tiene ficha.
+     */
+    async getDetail(item, signal) {
+        const self = storeBm;
+
+        if (!item.detailRef || !item.ean) {
+            return {};
+        }
+
+        const raw = await utils.requestProxiedJson(`${self.constants.DETAIL_ENDPOINT}${encodeURIComponent(item.ean)}.json`, {}, { signal });
+        const info = (raw.nutrilabel || {}).productInformation || {};
+        const allergens = (info.allergensInformation || []).flatMap((group) => group.allergens || []).map((allergen) => allergen.allergenName);
+
+        return {
+            ingredients: ((info.ingredientsInformation || [])[0] || {}).ingredientsList || '',
+            allergens: utils.formatList([...new Set(allergens)]),
+            nutrition: self.getNutrition(((info.nutritionalValues || [])[0] || {}).values),
+        };
     },
 };

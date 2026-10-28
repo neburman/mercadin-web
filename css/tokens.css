@@ -67,6 +67,8 @@
     --cart-thumb-size: 3.5rem;
     --cart-logo-size: 1.75rem;
     --cart-step-size-compact: 2.25rem;
+    --product-detail-width: 36rem;
+    --product-detail-image-size: 8rem;
     --badge-size: 1.375rem;
     --check-size: 1.375rem;
 }

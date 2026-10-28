@@ -27,6 +27,29 @@ const storeEroski = {
             unitPrice: '.quantity-text',
             image: '.product-img',
         },
+        BASE_URL: 'https://supermercado.eroski.es',
+        // La ficha solo existe como página HTML: ingredientes en texto y valores nutricionales en lista; no trae EAN.
+        DETAIL_SELECTORS: {
+            ingredients: '.feature-text-ingredients p.text',
+            nutritionBlock: '.feature-list',
+            nutritionTitle: '.title',
+            nutritionRow: 'ul.list li',
+            nutritionValue: 'span',
+        },
+        NUTRITION_TITLE: 'Información Nutricional',
+        // La fila «Cantidad 100 gramos» es la base de la tabla, no un valor.
+        NUTRITION_BASE_LABEL: 'Cantidad',
+        // «458 kilocaloría it (international table)», «15 gramos»: cifra y unidad escrita entera.
+        AMOUNT_PATTERN: /^(\d+(?:[.,]\d+)?)\s*([a-zá-úñ]+)/i,
+        UNIT_SYMBOLS: {
+            gramos: 'g',
+            miligramos: 'mg',
+            microgramos: 'µg',
+            kilocaloría: 'kcal',
+            kilocalorías: 'kcal',
+            kilojulios: 'kJ',
+            mililitros: 'ml',
+        },
     },
     globals: {},
     elements: {},
@@ -77,6 +100,46 @@ const storeEroski = {
         return match ? { unitPrice: product.parseNumber(match[2]), unitScale: match[1] } : { unitPrice: null, unitScale: '' };
     },
 
+    /**
+     * Devuelve la dirección de la ficha del producto, sin el puerto que Eroski pone en sus enlaces.
+     *
+     * @param {Element} card
+     * @returns {string} Vacío si la tarjeta no la trae.
+     */
+    getDetailUrl(card) {
+        const href = card.querySelector(storeEroski.constants.SELECTORS.title).getAttribute('href');
+
+        return href ? new URL(href, storeEroski.constants.BASE_URL).href : '';
+    },
+
+    /**
+     * Lee la lista de valores nutricionales de la ficha y pasa cada unidad escrita entera a su símbolo.
+     *
+     * @param {Document} doc
+     * @returns {Array<{label: string, text: string, isSub: boolean}>}
+     */
+    getNutrition(doc) {
+        const self = storeEroski;
+        const { DETAIL_SELECTORS, NUTRITION_TITLE, NUTRITION_BASE_LABEL, AMOUNT_PATTERN, UNIT_SYMBOLS } = self.constants;
+        const block = [...doc.querySelectorAll(DETAIL_SELECTORS.nutritionBlock)]
+            .find((entry) => self.getText(entry, DETAIL_SELECTORS.nutritionTitle).trim() === NUTRITION_TITLE);
+
+        if (!block) {
+            return [];
+        }
+
+        return [...block.querySelectorAll(DETAIL_SELECTORS.nutritionRow)]
+            .map((row) => {
+                const value = self.getText(row, DETAIL_SELECTORS.nutritionValue).trim();
+                const label = row.textContent.replace(value, '').trim();
+                const match = value.match(AMOUNT_PATTERN);
+                const text = match ? utils.formatAmount(product.parseNumber(match[1]), UNIT_SYMBOLS[match[2].toLowerCase()] || match[2]) : value;
+
+                return product.createNutrient(label, text);
+            })
+            .filter((nutrient) => nutrient.label !== NUTRITION_BASE_LABEL);
+    },
+
     // === CONTRACT ===
 
     /**
@@ -111,6 +174,28 @@ const storeEroski = {
     },
 
     /**
+     * Pide la página del producto y lee sus ingredientes y valores nutricionales.
+     *
+     * @param {Object} item Producto del modelo común; detailRef es la dirección de su ficha.
+     * @param {AbortSignal} signal
+     * @returns {Promise<{ingredients: string, nutrition: Array<Object>}>} Vacío si no se conoce la dirección.
+     */
+    async getDetail(item, signal) {
+        const self = storeEroski;
+
+        if (!item.detailRef) {
+            return {};
+        }
+
+        const doc = new DOMParser().parseFromString(await utils.requestProxiedText(item.detailRef, { signal }), 'text/html');
+
+        return {
+            ingredients: utils.escapeHtml(self.getText(doc, self.constants.DETAIL_SELECTORS.ingredients).trim()),
+            nutrition: self.getNutrition(doc),
+        };
+    },
+
+    /**
      * Mapea una tarjeta de producto.
      *
      * @param {Element} card
@@ -134,6 +219,7 @@ const storeEroski = {
             packageText: metrics.item_name,
             available: true,
             categories: [],
+            detailRef: self.getDetailUrl(card),
         };
     },
 };

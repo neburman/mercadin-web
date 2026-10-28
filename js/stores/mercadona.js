@@ -12,6 +12,10 @@ const storeMercadona = {
         ALGOLIA_API_KEY: '9d8f2e39e90df472b4f2e559a116fe17',
         // El almacén sale del código postal con una API de Mercadona sin CORS; hasta tener proxy, uno fijo.
         DEFAULT_WAREHOUSE: 'vlc1',
+        // Ficha del producto con EAN, ingredientes y alérgenos; no envía cabeceras CORS, así que va por el proxy.
+        DETAIL_ENDPOINT: 'https://tienda.mercadona.es/api/products/',
+        LANGUAGE: 'es',
+        SENTENCE_SEPARATOR: /(?<=\.)\s+/,
     },
     globals: {
         warehouse: '',
@@ -41,6 +45,16 @@ const storeMercadona = {
 
     getCategories(hit) {
         return (hit.categories || []).map((category) => category.name);
+    },
+
+    /**
+     * Quita las frases repetidas de los alérgenos: la ficha repite «Contiene leche…» por cada proveedor.
+     *
+     * @param {string} text
+     * @returns {string}
+     */
+    getUniqueSentences(text) {
+        return [...new Set(String(text ?? '').split(storeMercadona.constants.SENTENCE_SEPARATOR))].join(' ');
     },
 
     // === CONTRACT ===
@@ -73,6 +87,26 @@ const storeMercadona = {
      */
     toProducts(raw) {
         return algolia.getHits(raw).map((hit) => storeMercadona.mapHit(hit));
+    },
+
+    /**
+     * Pide la ficha del producto para sacar su código de barras, ingredientes y alérgenos.
+     *
+     * @param {Object} item Producto del modelo común.
+     * @param {AbortSignal} signal
+     * @returns {Promise<{ean: string, ingredients: string, allergens: string}>} Ingredientes y alérgenos con los alérgenos en <strong>.
+     */
+    async getDetail(item, signal) {
+        const self = storeMercadona;
+        const { constants, globals } = self;
+        const raw = await utils.requestProxiedJson(`${constants.DETAIL_ENDPOINT}${encodeURIComponent(item.id)}/`, { lang: constants.LANGUAGE, wh: globals.warehouse }, { signal });
+        const nutrition = raw.nutrition_information || {};
+
+        return {
+            ean: raw.ean || '',
+            ingredients: nutrition.ingredients || '',
+            allergens: nutrition.allergens ? self.getUniqueSentences(nutrition.allergens) : '',
+        };
     },
 
     /**

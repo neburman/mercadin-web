@@ -427,6 +427,7 @@ const results = {
 
     /**
      * Pinta la tarjeta con todos los datos; la vista elegida decide con CSS cuáles se ven.
+     * El nombre es el botón que abre la ficha y su área cubre toda la tarjeta, salvo el control de la lista.
      *
      * @param {Object} item Producto del modelo común.
      * @returns {string}
@@ -439,7 +440,7 @@ const results = {
             <div class="product-card__media">${self.getImageHTML(item)}${self.getLogoHTML(engine.getLogoUrl(engine.getStoreById(item.storeId)))}</div>
             <div class="product-card__body">
                 <span class="product-card__store">${utils.escapeHtml(item.storeName)}</span>
-                <h3 class="product-card__name">${utils.escapeHtml(item.name)}</h3>
+                <h3 class="product-card__name"><button class="product-card__open" type="button" data-product-key="${utils.escapeHtml(cart.getKey(item))}" aria-haspopup="dialog">${utils.escapeHtml(item.name)}</button></h3>
                 ${item.brand ? `<p class="product-card__brand">${utils.escapeHtml(item.brand)}</p>` : ''}
                 ${self.getPriceHTML(item)}
                 <p class="product-card__unit-price">${utils.escapeHtml(utils.formatUnitPrice(item.unitPrice, item.unit))}</p>

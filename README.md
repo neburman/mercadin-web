@@ -14,6 +14,19 @@ Buscador que compara el precio de un producto en varios supermercados españoles
 - Calcula el precio por kilo, litro o unidad para poder comparar envases distintos.
 - Ordena por precio por kg/l (el orden inicial), relevancia, más barato, más caro, ofertas o A-Z.
 - Solo muestra productos cuyo nombre o marca contienen lo buscado, sin tener en cuenta tildes ni plurales.
+- Al pulsar un producto abre su ficha con ingredientes, alérgenos, si es apto para veganos y vegetarianos y la información nutricional. Los datos del comercio mandan y [Open Food Facts](https://world.openfoodfacts.org), buscando por el código de barras, completa lo que falte y da la aptitud vegana, que es orientativa:
+
+  | Comercio | Del comercio | Código de barras (Open Food Facts) |
+  |---|---|---|
+  | Mercadona | Ingredientes y alérgenos | Sí |
+  | BM | Ingredientes, alérgenos y nutrición, si tiene ficha | Sí |
+  | Costco | Ingredientes y alérgenos | Sí |
+  | El Corte Inglés | Ingredientes, alérgenos y nutrición, si tiene ficha | Sí |
+  | Alcampo | Ingredientes y nutrición | A veces |
+  | Dia, Eroski | Ingredientes y nutrición | No |
+  | Carrefour, Consum, Lidl, Action | — | Sí |
+
+  Aldi no publica ni ingredientes ni código de barras; Lupa, las perfumerías, las tiendas de mascotas y Amazon no tienen ficha, y en ellos el modal solo muestra los datos del resultado.
 - Guarda productos en una lista de la compra separada por comercio, con cantidades, subtotales y casillas para marcar lo ya comprado y quitarlo.
 - Recuerda en el navegador el código postal, los comercios elegidos, la última ordenación y la lista de la compra.
 - Muestra los resultados según responde cada comercio, sin esperar al más lento; un intento que tarda más de 10 s se da por fallido.
@@ -31,7 +44,7 @@ Si se prefiere servirlo como en GitHub Pages:
 python3 -m http.server 8080 --bind 127.0.0.1
 ```
 
-y abrir http://127.0.0.1:8080/.
+y abrir http://127.0.0.1:8080/. Vale cualquier puerto libre: el proxy acepta `localhost` y `127.0.0.1` en todos.
 
 ## Estructura
 
@@ -63,6 +76,8 @@ img/                Logo y favicon
 | `dropdown.js` | Desplegables de comercios y ordenación: lista cerrada en móvil y tablet, chips abiertos en PC |
 | `postal-code.js` | Código postal |
 | `cart.js` | Lista de la compra: botón con contador en la cabecera y modal con los productos agrupados por comercio |
+| `product-detail.js` | Ficha del producto: modal que se abre al pulsar una tarjeta, con ingredientes, alérgenos, aptitud vegana y valores nutricionales |
+| `open-food-facts.js` | Cliente de Open Food Facts: busca el producto por su código de barras |
 
 Cada componente es un objeto literal global con `constants`, `globals`, `elements`, `init()` y `listeners()`. No se usan módulos ES para que la página funcione abierta desde `file://`.
 
@@ -70,12 +85,14 @@ Cada componente es un objeto literal global con `constants`, `globals`, `element
 
 La mayoría de comercios no permiten peticiones desde otras webs (CORS). Esas peticiones pasan por un Cloudflare Worker (`utils.constants.PROXY_URL`), cuyo código está en [`proxy/worker.js`](proxy/worker.js) con los pasos para desplegarlo en otra cuenta. El Worker:
 
-- solo reenvía a los dominios de su lista `ALLOWED_HOSTS` y solo acepta los orígenes de `ALLOWED_ORIGINS` (GitHub Pages, `file://` y localhost);
+- solo reenvía a los dominios de su lista `ALLOWED_HOSTS` y solo acepta los orígenes de `ALLOWED_ORIGINS` (GitHub Pages y `file://`) y `localhost` o `127.0.0.1` en cualquier puerto (`LOCAL_ORIGIN_PATTERN`);
 - no reenvía cookies ni cabeceras de origen, y no sigue redirecciones;
 - devuelve las respuestas comprimidas;
 - guarda 30 minutos en la caché de Cloudflare, compartida por todos los visitantes, las respuestas que son resultados de verdad: JSON con estado 200, o HTML con la marca de resultados de su comercio (`CACHE_HTML_MARKERS`), para no guardar un captcha. Así una búsqueda repetida no vuelve a llegar al comercio y su antibots bloquea menos el proxy. La cabecera `X-Mercadin-Cache` dice si la respuesta sale de la caché (`HIT`) o del comercio (`MISS`).
 
 Druni busca en Doofinder, que solo responde a peticiones que vienen de druni.es: para ese dominio (`UPSTREAM_ORIGINS`), el Worker envía como origen la web de Druni.
+
+Las fichas de producto van por el proxy, incluidas las de Mercadona (`tienda.mercadona.es`) y la nutricional de BM (`cdn-bm.aktiosdigitalservices.com`); las de Lidl y Eroski son HTML y tienen su marca en `CACHE_HTML_MARKERS`. Open Food Facts va directo, porque admite CORS.
 
 Aldi, Mercadona y Primor van directos, sin proxy: su buscador ya permite peticiones desde otras webs y responde comprimido. Lidl también las permite, pero va por el proxy porque responde sin comprimir.
 
@@ -86,7 +103,8 @@ Aldi, Mercadona y Primor van directos, sin proxy: su buscador ya permite peticio
    - `isAvailable(postalCode)`: si el comercio da servicio en ese código postal;
    - `loadCoverage()` (opcional): carga al abrir la página la zona de reparto que luego consulta `isAvailable`;
    - `search(term, signal)`: lanza la petición y devuelve la respuesta cruda (con `utils.requestJson` si va directo, o `utils.requestProxiedJson` si va por el proxy);
-   - `toProducts(raw)`: mapea la respuesta a los campos del modelo común (`id`, `name`, `brand`, `imageUrl`, `price`, `previousPrice`, `unitPrice`/`unitScale` o `packageText`, `available`, `categories`).
+   - `toProducts(raw)`: mapea la respuesta a los campos del modelo común (`id`, `name`, `brand`, `imageUrl`, `price`, `previousPrice`, `unitPrice`/`unitScale` o `packageText`, `available`, `categories` y, si el buscador lo trae, `ean` y `detailRef`);
+   - `getDetail(item, signal)` (opcional): pide la ficha del producto y devuelve los campos que tenga de `{ ean, ingredients, allergens, nutrition }`. Los textos pueden traer HTML (solo se conservan las negritas) y `nutrition` son filas hechas con `product.createNutrient()`. Lo que necesite para pedir la ficha (URL, identificadores…) lo guarda `toProducts` en `detailRef`. Sin `ean` ni `getDetail`, la ficha del producto sale sin ingredientes.
 2. Añadir su `<script defer>` en `index.html`, antes de los componentes de `js/core`.
 3. Añadirlo a `STORES` en `js/core/app.js`.
 4. Si va por proxy, añadir su dominio a `ALLOWED_HOSTS` del Worker.

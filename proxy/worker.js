@@ -29,12 +29,16 @@ const ALLOWED_HOSTS = [
     'www.kiwoko.com',
     'www.tiendanimal.es',
     'www.zooplus.es',
+    'tienda.mercadona.es',
+    'cdn-bm.aktiosdigitalservices.com',
 ];
 // Buscadores externos que solo responden a la web de su comercio (Doofinder de Druni): se les envía como origen esa web.
 const UPSTREAM_ORIGINS = {
     'eu1-search.doofinder.com': 'https://www.druni.es',
 };
-const ALLOWED_ORIGINS = ['https://neburman.github.io', 'null', 'http://127.0.0.1:8080', 'http://localhost:8080'];
+const ALLOWED_ORIGINS = ['https://neburman.github.io', 'null'];
+// La web servida en local, en cualquier puerto: el que se use depende de cuál esté libre en cada equipo.
+const LOCAL_ORIGIN_PATTERN = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 const ALLOWED_METHODS = ['GET', 'POST'];
 // Cabeceras que delatan la web de origen o llevan datos de quien navega: no se reenvían al comercio.
 const BLOCKED_HEADER_PATTERN = /^(cookie|origin|referer|host|content-length|sec-|cf-|x-forwarded-|x-real-ip)/i;
@@ -57,6 +61,9 @@ const CACHE_HTML_MARKERS = {
     'www.tiendanimal.es': 'isk-product-card',
     'www.zooplus.es': 'initialStoreState',
     'www.lupaonline.com': 'name="postcode"',
+    // Fichas de producto.
+    'www.lidl.es': 'id="__NUXT_DATA__"',
+    'supermercado.eroski.es': 'product-detail-main',
 };
 
 /**
@@ -112,7 +119,7 @@ export default {
         };
         const reply = (body, status) => new Response(body, { status, headers: cors });
 
-        if (!ALLOWED_ORIGINS.includes(origin)) {
+        if (!ALLOWED_ORIGINS.includes(origin) && !LOCAL_ORIGIN_PATTERN.test(origin)) {
             return new Response('Origen no permitido', { status: 403 });
         }
 

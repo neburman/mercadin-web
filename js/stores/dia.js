@@ -13,6 +13,13 @@ const storeDia = {
         QUERY_PARAMS: {
             page: 1,
         },
+        // Ficha del producto con ingredientes y valores nutricionales; no trae EAN.
+        DETAIL_ENDPOINT: 'https://www.dia.es/api/v1/pdp-back/',
+        DETAIL_HEADERS: {
+            Accept: 'application/json, text/plain, */*',
+        },
+        ENERGY_LABEL: 'Valor energético',
+        ENERGY_UNITS: ['kcal', 'kJ'],
     },
     globals: {},
     elements: {},
@@ -68,6 +75,45 @@ const storeDia = {
      */
     toProducts(raw) {
         return storeDia.getItems(raw).map((item) => storeDia.mapItem(item));
+    },
+
+    /**
+     * Pide la ficha del producto: ingredientes con los alérgenos en negrita y valores por 100 g.
+     *
+     * @param {Object} item Producto del modelo común.
+     * @param {AbortSignal} signal
+     * @returns {Promise<{ingredients: string, nutrition: Array<Object>}>}
+     */
+    async getDetail(item, signal) {
+        const self = storeDia;
+        const { constants } = self;
+        const raw = await utils.requestProxiedJson(`${constants.DETAIL_ENDPOINT}${encodeURIComponent(item.id)}`, {}, { signal, headers: constants.DETAIL_HEADERS });
+        const data = raw.product || {};
+
+        return {
+            ingredients: (data.ingredients || {}).text || '',
+            nutrition: self.getNutrition(((data.nutritional_info || {}).nutritional_values) || {}),
+        };
+    },
+
+    /**
+     * Pasa los valores nutricionales de la ficha a filas de la tabla: primero la energía y luego cada valor con su desglose.
+     *
+     * @param {Object} values { energy_value, energy_value_kj, values: [{ title, value_per_100_g, measure_unit, items }] }
+     * @returns {Array<{label: string, text: string, isSub: boolean}>}
+     */
+    getNutrition(values) {
+        const { ENERGY_LABEL, ENERGY_UNITS } = storeDia.constants;
+        const [kcal, kj] = ENERGY_UNITS;
+        const toRow = (value, isSub) => product.createNutrient(value.title, utils.formatAmount(value.value_per_100_g ?? value.value, value.measure_unit), isSub);
+        const energy = [[values.energy_value, kcal], [values.energy_value_kj, kj]]
+            .filter(([amount]) => Number.isFinite(amount))
+            .map(([amount, unit]) => product.createNutrient(ENERGY_LABEL, utils.formatAmount(amount, unit), false));
+
+        return [
+            ...energy,
+            ...(values.values || []).flatMap((value) => [toRow(value, false), ...(value.items || []).map((subValue) => toRow(subValue, true))]),
+        ];
     },
 
     /**

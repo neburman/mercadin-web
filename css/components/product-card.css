@@ -1,5 +1,6 @@
 /* Vista de lista (por defecto): imagen a la izquierda y todos los datos. */
 .product-card {
+    position: relative;
     display: flex;
     align-items: flex-start;
     gap: var(--space-3);
@@ -53,6 +54,30 @@
     font-size: var(--font-size-base);
 }
 
+/* Botón que abre la ficha: parece el título y su ::after cubre toda la tarjeta para que se pueda pulsar en cualquier sitio. */
+.product-card__open {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.product-card__open::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius);
+}
+
+.product-card__open:hover {
+    text-decoration: underline;
+}
+
 .product-card__brand,
 .product-card__unit-price {
     color: var(--color-text-muted);
@@ -88,7 +113,10 @@
 }
 
 /* Control de la lista: botón de añadir o, si ya está en la lista, selector −/cantidad/+. */
+/* Por encima del área del botón de la ficha, que cubre la tarjeta. */
 .product-card__cart {
+    position: relative;
+    z-index: 1;
     display: flex;
     align-self: flex-start;
     margin-top: auto;
@@ -195,9 +223,12 @@
 }
 
 .results[data-view="mosaic"] .product-card__name {
+    font-size: var(--font-size-sm);
+}
+
+.results[data-view="mosaic"] .product-card__open {
     display: -webkit-box;
     overflow: hidden;
-    font-size: var(--font-size-sm);
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
 }

@@ -1,0 +1,210 @@
+/* Modal de la ficha: cabecera fija y el contenido hace scroll debajo. */
+.product-detail {
+    width: min(100% - 2 * var(--space-4), var(--product-detail-width));
+    max-width: none;
+    max-height: calc(100dvh - 2 * var(--space-6));
+    padding: 0;
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+    color: var(--color-text);
+    box-shadow: var(--shadow);
+}
+
+.product-detail[open] {
+    display: flex;
+    flex-direction: column;
+}
+
+.product-detail:focus-visible {
+    outline: none;
+}
+
+.product-detail::backdrop {
+    background: var(--color-backdrop);
+}
+
+.product-detail__panel {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.product-detail__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+    border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.product-detail__title {
+    align-self: center;
+    font-size: var(--font-size-lg);
+}
+
+.product-detail__close {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: var(--touch-size);
+    height: var(--touch-size);
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--color-text);
+    cursor: pointer;
+    transition: background-color var(--transition);
+}
+
+.product-detail__close:hover {
+    background: var(--color-muted-bg);
+}
+
+.product-detail__close svg {
+    width: var(--icon-size);
+    height: var(--icon-size);
+}
+
+.product-detail__content {
+    display: grid;
+    flex: 1;
+    align-content: start;
+    gap: var(--space-4);
+    min-height: 0;
+    padding: var(--space-4);
+    overflow-y: auto;
+}
+
+/* Resumen: imagen a la izquierda y datos del resultado. */
+.product-detail__summary {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-4);
+}
+
+.product-detail__media {
+    display: flex;
+    flex: 0 0 var(--product-detail-image-size);
+    align-items: center;
+    justify-content: center;
+    height: var(--product-detail-image-size);
+    border-radius: var(--radius-sm);
+    background: var(--color-muted-bg);
+    overflow: hidden;
+}
+
+.product-detail__image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.product-detail__facts {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+}
+
+.product-detail__store {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    text-transform: uppercase;
+}
+
+.product-detail__brand,
+.product-detail__unit-price,
+.product-detail__status {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+}
+
+/* Aptitud vegana y vegetariana: verde si es apto, rojo si no, neutro si no se sabe. */
+.product-detail__diets {
+    display: grid;
+    gap: var(--space-2);
+}
+
+.product-detail__diet-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.product-detail__diet {
+    padding: var(--space-1) var(--space-3);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-muted-bg);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+}
+
+.product-detail__diet--yes {
+    border-color: var(--color-primary);
+    background: var(--color-selected-bg);
+    color: var(--color-primary);
+}
+
+.product-detail__diet--no {
+    border-color: var(--color-error-text);
+    background: var(--color-error-bg);
+    color: var(--color-error-text);
+}
+
+.product-detail__section {
+    display: grid;
+    gap: var(--space-2);
+}
+
+.product-detail__section-title {
+    font-size: var(--font-size-base);
+}
+
+.product-detail__text {
+    font-size: var(--font-size-sm);
+}
+
+.product-detail__nutrition {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-size-sm);
+}
+
+.product-detail__nutrition th,
+.product-detail__nutrition td {
+    padding: var(--space-1) 0;
+    border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.product-detail__nutrition th {
+    font-weight: normal;
+    text-align: left;
+}
+
+.product-detail__nutrition td {
+    font-weight: var(--font-weight-bold);
+    text-align: right;
+    white-space: nowrap;
+}
+
+.product-detail__nutrient--sub th {
+    padding-left: var(--space-4);
+    color: var(--color-text-muted);
+}
+
+@media (max-width: 599px) {
+    .product-detail__media {
+        flex-basis: var(--image-size-compact);
+        height: var(--image-size-compact);
+    }
+}

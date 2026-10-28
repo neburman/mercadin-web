@@ -31,6 +31,8 @@ const storeAction = {
             'Content-Type': 'application/json',
             'Accept-Language': 'es-ES',
         },
+        // El producto no expone el EAN, pero va en el nombre de su imagen: «…/3213693_4006894530704-111_01_ujy4sg».
+        IMAGE_EAN_PATTERN: /\/\d+_(\d{8,14})-\d+_/,
     },
     globals: {},
     elements: {},
@@ -115,6 +117,7 @@ const storeAction = {
             packageText: `${item.title || ''} ${item.description || ''}`,
             available: item.isAvailable,
             categories: [],
+            ean: (String(item.image ?? '').match(storeAction.constants.IMAGE_EAN_PATTERN) || [])[1],
         };
     },
 };
